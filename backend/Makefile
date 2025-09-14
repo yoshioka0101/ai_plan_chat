@@ -13,7 +13,7 @@ help:
 # 開発環境の立ち上げ
 dev:
 	@echo "開発環境を起動しています"
-	go run cmd/api/main.go
+	@export PATH=$$PATH:$$(go env GOPATH)/bin && air
 
 # テストの実行
 test:
