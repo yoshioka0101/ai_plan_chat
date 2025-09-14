@@ -1,0 +1,9 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  bin = "./tmp/main"
+  cmd = "go build -o ./tmp/main ./cmd/api"
+  include_ext = ["go"]
+  exclude_dir = ["tmp"]
+  stop_on_error = true
