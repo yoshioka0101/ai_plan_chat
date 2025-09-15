@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/yoshioka0101/ai_plane_chat/internal/api"
 )
 
 type HealthHandler struct{}
@@ -13,10 +14,7 @@ func NewHealthHandler() *HealthHandler {
 }
 
 func (h *HealthHandler) GetHealth(c *gin.Context) {
-	// 外部スキーマ参照で生成された型を使用
-	response := struct {
-		Status string `json:"status"`
-	}{
+	response := api.HealthResponse{
 		Status: "ok",
 	}
 	

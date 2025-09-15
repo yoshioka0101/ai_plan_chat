@@ -19,10 +19,6 @@ func SetupRoutes() *gin.Engine {
 
 	// routes
 	r.GET("/health", healthHandler.GetHealth)
-	
-	// 将来のエンドポイント
-	// r.POST("/todos", todoHandler.CreateTodo)
-	// r.GET("/todos", todoHandler.GetTodos)
 
 	return r
 }
