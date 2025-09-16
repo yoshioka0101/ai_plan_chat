@@ -24,6 +24,9 @@ make install
 ```bash
 # 開発サーバーを起動
 make dev
+
+# もしくは
+go run cmd/api/main.go
 ```
 
 サーバーは http://localhost:8080 で起動します。
