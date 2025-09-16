@@ -8,7 +8,6 @@ import (
 
 func SetupRoutes() *gin.Engine {
 	logger := middleware.NewLogger()
-	defer logger.Sync()
 
 	r := gin.New()
 	r.Use(middleware.Logger(logger))
