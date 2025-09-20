@@ -25,11 +25,12 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
-    
+  
     - name: Run tests
       run: make test
     
     - name: Upload coverage to Codecov
+      if: ${{ secrets.CODECOV_TOKEN }}
       uses: codecov/codecov-action@v3
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
