@@ -1,41 +1,38 @@
 package middleware
 
 import (
+	"log/slog"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+	"github.com/google/uuid"
 )
 
-// NewLogger はHTTPリクエストログ用のzapロガーを作成します。
+// NewLogger はHTTPリクエストログ用のslogロガーを作成します。
 // 必要最小限の情報のみを出力するように設定されています。
 //
 // 設定内容:
 //   - Infoレベル以上のログのみ出力
 //   - JSON形式で構造化されたログ
-//   - timestamp, callerフィールドは出力しない（簡潔性のため）
 //   - stdout/stderrに出力
 //
 // Returns:
-//   *zap.Logger: 設定済みのzapロガー
-func NewLogger() *zap.Logger {
-	config := zap.NewProductionConfig()
-	config.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
-	config.OutputPaths = []string{"stdout"}
-	config.ErrorOutputPaths = []string{"stderr"}
-
-	// 不要なフィールドを無効化
-	config.EncoderConfig.TimeKey = ""   // timestampを出力しない
-	config.EncoderConfig.CallerKey = "" // callerを出力しない
-	config.EncoderConfig.MessageKey = "msg"
-
-	logger, _ := config.Build()
-	return logger
+//   *slog.Logger: 設定済みのslogロガー
+func NewLogger() *slog.Logger {
+	opts := &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}
+	handler := slog.NewJSONHandler(os.Stdout, opts)
+	return slog.New(handler)
 }
 
-func Logger(l *zap.Logger) gin.HandlerFunc {
+func Logger(l *slog.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// トレースIDを生成してコンテキストに設定
+		traceID := uuid.New().String()
+		c.Set("trace_id", traceID)
+
 		start := time.Now()
 		c.Next()
 
@@ -44,19 +41,20 @@ func Logger(l *zap.Logger) gin.HandlerFunc {
 
 		// ログレベルを決定（4xx, 5xxはwarn、その他はinfo）
 		status := c.Writer.Status()
-		var level zapcore.Level
+		var level slog.Level
 		if status >= 400 {
-			level = zapcore.WarnLevel
+			level = slog.LevelWarn
 		} else {
-			level = zapcore.InfoLevel
+			level = slog.LevelInfo
 		}
 
-		// 必要最小限の情報のみログ出力
-		l.Log(level, "HTTP",
-			zap.Int("status", status),
-			zap.String("method", c.Request.Method),
-			zap.String("path", c.Request.URL.Path),
-			zap.String("duration", duration.String()), // duration.Stringで見やすく
+		// 必要最小限の情報のみログ出力（トレースID含む）
+		l.Log(c.Request.Context(), level, "HTTP",
+			slog.String("trace_id", traceID),
+			slog.Int("status", status),
+			slog.String("method", c.Request.Method),
+			slog.String("path", c.Request.URL.Path),
+			slog.String("duration", duration.String()),
 		)
 	}
 }
