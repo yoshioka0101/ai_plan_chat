@@ -18,7 +18,8 @@ import (
 //   - stdout/stderrに出力
 //
 // Returns:
-//   *slog.Logger: 設定済みのslogロガー
+//
+//	*slog.Logger: 設定済みのslogロガー
 func NewLogger() *slog.Logger {
 	opts := &slog.HandlerOptions{
 		Level: slog.LevelInfo,

@@ -17,6 +17,6 @@ func (h *HealthHandler) GetHealth(c *gin.Context) {
 	response := api.HealthResponse{
 		Status: "ok",
 	}
-	
+
 	c.JSON(http.StatusOK, response)
 }
