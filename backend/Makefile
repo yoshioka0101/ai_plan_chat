@@ -15,6 +15,7 @@ help:
 	@echo "  dev-full    コード生成 + ドキュメント + 開発サーバー"
 	@echo "  openapi-gen OpenAPIからコードを生成（従来版）"
 	@echo "  openapi     ReDoc を起動（redoc のエイリアス）"
+	@echo "  ci          GitHub Actions ワークフローの雛形をコピー"
 	@echo "  help        このヘルプを表示"
 
 # 必要なツールをインストール
@@ -92,3 +93,17 @@ dev-full:
 	@echo "APIサーバー: http://localhost:8080"
 	@echo "ReDoc: 別ターミナルで 'make redoc' を実行"
 	@$(MAKE) --no-print-directory dev
+
+# GitHub Actions ワークフローの雛形コピー
+ci:
+	@if [ -z "$(FILENAME)" ]; then \
+		echo "FILENAME が指定されていません。例: make ci FILENAME=deploy"; \
+		exit 1; \
+	fi
+	@mkdir -p ../.github/workflows
+	@if [ -f ../.github/workflows/$(FILENAME).yml ]; then \
+		echo "../.github/workflows/$(FILENAME).yml は既に存在します"; \
+		exit 1; \
+	fi
+	cp ../.github/workflows/ci.yml.example ../.github/workflows/$(FILENAME).yml
+	@echo ".github/workflows/$(FILENAME).yml を作成しました"
