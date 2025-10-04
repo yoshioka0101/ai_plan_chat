@@ -3,6 +3,11 @@ name: Claude Code Review
 on:
   pull_request:
 
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
 jobs:
   claude-review:
     runs-on: ubuntu-latest
