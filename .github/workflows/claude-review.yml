@@ -1,0 +1,39 @@
+
+name: Claude Code Review
+
+on:
+    pull_request:
+
+jobs:
+    claude-review:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+            - name: Claude Code Review
+              uses: actions/claude-review@v1
+              with:
+                fetch-depth: 0
+
+            - name: Run Code Review
+              id: claude-review
+              uses: anthropics/claude-code-action@v1
+              with:
+                prompt: |
+                  Please review the following code and provide a detailed analysis of the changes made.
+                  Please provide a detailed analysis of the changes made.
+                  Please provide a detailed analysis of the changes made.
+
+
+
+
+
+              # ========================================
+# ジョブ
+# 実行する処理のまとまりを記載する
+# ========================================
+
+# ========================================
+# ステップ
+# 各ジョブの中で順番に実行される具体的な処理を記載する
+# ========================================
