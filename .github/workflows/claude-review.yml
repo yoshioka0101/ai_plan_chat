@@ -3,6 +3,12 @@ name: Claude Code Review
 on:
   pull_request:
 
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+  issues: write
+
 jobs:
   claude-review:
     runs-on: ubuntu-latest
@@ -10,13 +16,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Run Code Review
         uses: anthropics/claude-code-action@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          anthropic_api_key: ${{ secrets.CLAUDE_API_KEY }}
+          github_token: ${{ secrets.GH_TOKEN }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            Please review the following code and provide a detailed analysis of the changes made.
-          anthropic_model: claude-3-5-sonnet-20241022
+            プルリクエストを以下の観点でレビューしてフィードバックしてください:
+            - コードの品質
+            - コードの可読性
+            - コードの保守性
+            - コードの拡張性
+            - コードのテスト
+            - コードのパフォーマンス
+            - コードのセキュリティ
+          use_sticky_comment: true

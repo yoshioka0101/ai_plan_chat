@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/yoshioka0101/ai_plane_chat/internal/api"
+	"github.com/yoshioka0101/ai_plan_chat/internal/gen/api"
 )
 
 type HealthHandler struct{}
