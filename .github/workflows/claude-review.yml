@@ -23,5 +23,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            Please review the following code and provide a detailed analysis of the changes made.
+            Review this PR's changes in Japanese. Be concise. Only mention actual issues found.
+            
+            MAXIMUM 500 characters. NO explanations. NO summaries. ONLY issues.
           anthropic_model: claude-3-5-sonnet-20241022
