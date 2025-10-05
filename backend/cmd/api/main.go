@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/yoshioka0101/ai_plane_chat/internal/http"
+	"github.com/yoshioka0101/ai_plan_chat/internal/http"
 )
 
 func main() {

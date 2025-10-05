@@ -1,4 +1,4 @@
-module github.com/yoshioka0101/ai_plane_chat
+module github.com/yoshioka0101/ai_plan_chat
 
 go 1.25
 
