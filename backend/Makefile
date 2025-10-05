@@ -23,7 +23,6 @@ install:
 	@echo "開発に必要なツールをインストールしています..."
 	@echo "Go ツール:"
 	go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
-	go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen@latest
 	go install github.com/air-verse/air@latest
 	@echo "Node.js ツール:"
 	npm install -g http-server
@@ -65,25 +64,25 @@ build:
 
 .PHONY: redocly-bundle
 redocly-bundle: # redocly で OpenAPI を単一ファイルにする
-	@npx @redocly/cli@1.34.2 bundle openapi.yaml -o openapi-bundle.yaml
+	@npx @redocly/cli@1.34.2 bundle internal/api/openapi/openapi.yaml -o internal/api/openapi/openapi-bundle.yaml
 
 .PHONY: redocly-split
 redocly-split: # redocly で OpenAPI を複数ファイルに分割する
-	@npx @redocly/cli@1.34.2 split openapi-bundle.yaml --outDir schemas
+	@npx @redocly/cli@1.34.2 split internal/api/openapi-bundle.yaml --outDir internal/api/schemas
 
 .PHONY: gen-api
 gen-api: redocly-bundle ## コード生成（oapi-codegen）
-	@go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen --config=./oapi-codegen.yaml ./openapi-bundle.yaml
+	@cd internal/api/openapi && go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen --config=./oapi-codegen.yaml ./openapi-bundle.yaml
 	@go mod tidy
 
 # OpenAPIからコードを生成（従来版）
 openapi-gen:
 	@echo "OpenAPIからコードを生成しています"
-	@oapi-codegen --config=./oapi-codegen.yaml ./openapi.yaml
+	@cd internal/api && oapi-codegen --config=./oapi-codegen.yaml ./openapi.yaml
 
 .PHONY: redoc
 redoc: ## redoc を起動する
-	npx @redocly/cli@1.34.2 preview-docs -p 3001 openapi.yaml
+	npx @redocly/cli@1.34.2 preview-docs -p 3001 internal/api/openapi/openapi.yaml
 
 
 # 開発用統合コマンド

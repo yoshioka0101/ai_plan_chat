@@ -18,6 +18,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: './schemas/HealthResponse.yaml'
+                $ref: '#/components/schemas/HealthResponse'
 components:
-  schemas: {}
+  schemas:
+    HealthResponse:
+      $ref: './components/schemas/HealthResponse.yaml'

@@ -1,9 +1,6 @@
 name: Go CI
 
-on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
+on: [push, pull_request]
 
 jobs:
   test:
@@ -11,7 +8,7 @@ jobs:
     
     strategy:
       matrix:
-        go-version: [1.25]
+        go-version: [1.23]
     
     steps:
     - uses: actions/checkout@v4
@@ -19,7 +16,6 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-      
         go-version: ${{ matrix.go-version }}
     
     - name: Cache Go modules
@@ -29,17 +25,12 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
-    
-    - name: Download dependencies
-      run: go mod download
-    
-    - name: Verify dependencies
-      run: go mod verify
-    
+  
     - name: Run tests
-      run: go test -v -race -coverprofile=coverage.out ./...
+      run: make test
     
     - name: Upload coverage to Codecov
+      if: ${{ secrets.CODECOV_TOKEN }}
       uses: codecov/codecov-action@v3
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
@@ -57,12 +48,10 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: 1.25
+        go-version: 1.23
     
-    - name: golangci-lint
-      uses: golangci/golangci-lint-action@v3
-      with:
-        version: latest
+    - name: Lint code
+      run: make lint
 
   build:
     runs-on: ubuntu-latest
@@ -74,22 +63,13 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: 1.25
+        go-version: 1.23
     
-    - name: Build
-      run: go build -v ./...
-    
-    - name: Build for multiple platforms
-      run: |
-        mkdir -p bin
-        GOOS=linux GOARCH=amd64 go build -o bin/app-linux-amd64 ./cmd/... || echo "No cmd directory found"
-        GOOS=windows GOARCH=amd64 go build -o bin/app-windows-amd64.exe ./cmd/... || echo "No cmd directory found"
-        GOOS=darwin GOARCH=amd64 go build -o bin/app-darwin-amd64 ./cmd/... || echo "No cmd directory found"
-        GOOS=darwin GOARCH=arm64 go build -o bin/app-darwin-arm64 ./cmd/... || echo "No cmd directory found"
+    - name: Build application
+      run: make build
     
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
         name: binaries
-        path: bin/
-      if: always()
+        path: bin/api
