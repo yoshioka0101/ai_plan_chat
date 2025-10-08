@@ -1,0 +1,23 @@
+output: models
+pkgname: models
+driver: mysql
+
+mysql:
+  dsn: "${DATABASE_URL}"
+  schema: ai_plan_chat
+
+  # 生成するテーブル（schema指定があれば自動検出されるため省略可能）
+  # tables:
+  #   - users
+  #   - user_auths
+  #   - interpretations
+  #   - tasks
+  #   - events
+  #   - tags
+  #   - tag_tasks
+  #   - tag_events
+
+# 型生成オプション
+add_enum_types: true
+add_global_variants: true
+tag_name_case: snake
