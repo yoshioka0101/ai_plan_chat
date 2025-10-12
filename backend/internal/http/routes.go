@@ -1,0 +1,23 @@
+package http
+
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/yoshioka0101/ai_plan_chat/internal/http/handler"
+	"github.com/yoshioka0101/ai_plan_chat/internal/middleware"
+)
+
+func SetupRoutes() *gin.Engine {
+	logger := middleware.NewLogger()
+
+	r := gin.New()
+	r.Use(middleware.Logger(logger))
+	r.Use(gin.Recovery())
+
+	// handlers
+	healthHandler := handler.NewHealthHandler()
+
+	// routes
+	r.GET("/health", healthHandler.GetHealth)
+
+	return r
+}

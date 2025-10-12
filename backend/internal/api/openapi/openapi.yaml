@@ -1,0 +1,25 @@
+openapi: 3.0.3
+info:
+  title: AI Plan Chat API
+  description: AIによるタスク生成アプリのAPI
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Development server
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      description: Health check のためのエンドポイント
+      operationId: GetHealth
+      responses:
+        '200':
+          description: Successful health check
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+components:
+  schemas:
+    HealthResponse:
+      $ref: './components/schemas/HealthResponse.yaml'

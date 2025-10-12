@@ -1,19 +1,10 @@
 package main
 
 import (
-	"net/http"
-
-	"github.com/gin-gonic/gin"
+	"github.com/yoshioka0101/ai_plan_chat/internal/http"
 )
 
 func main() {
-	r := gin.Default()
-
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status": "ok",
-		})
-	})
-
+	r := http.SetupRoutes()
 	r.Run(":8080")
 }
