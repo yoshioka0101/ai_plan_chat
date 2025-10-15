@@ -1,5 +1,5 @@
 package: api
-output: ../../gen/api/generated.go
+output: ../../../internal/gen/api/generated.go
 generate:
   models: true
   gin-server: true
