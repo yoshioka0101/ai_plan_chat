@@ -1,10 +1,48 @@
 # AI Plan Chat の Backend開発
 Go言語で構築されたREST APIサーバーです。
 
+### ディレクトリ構成
+
+```
+backend/
+├── cmd/                      # アプリケーションエントリーポイント
+│   ├── api/                 # APIサーバー起動
+│   └── migrate/             # DBマイグレーション実行
+│
+├── config/                   # 設定管理（環境変数、設定ファイル読み込み）
+│
+├── internal/                 # プライベートコード
+│   ├── model/               # ドメインエンティティ（ビジネスロジックを持つ）
+│   ├── repository/          # Repositoryインターフェース定義
+│   ├── infrastructure/      # Repository実装（DB依存コード）
+│   ├── usecase/             # ユースケース層（ビジネスロジックのオーケストレーション）
+│   │
+│   ├── http/                # HTTP層
+│   │   ├── handler/        # HTTPリクエスト処理
+│   │   ├── presenter/      # レスポンス変換（UseCaseの結果をHTTPレスポンスに変換）
+│   │   └── routes.go       # ルーティング設定
+│   │
+│   ├── middleware/          # HTTPミドルウェア
+│   ├── errors/              # カスタムエラー型
+│   │
+│   ├── api/openapi/         # OpenAPI定義ファイル
+│   │   ├── openapi.yaml    # API仕様（分割版）
+│   │   ├── components/     # 再利用可能なコンポーネント
+│   │   └── paths/          # エンドポイント定義
+│   │
+│   └── gen/                 # 自動生成コード（編集禁止）
+│       ├── api/            # OpenAPI生成コード (oapi-codegen)
+│       └── db/             # BOB生成コード (bobgen) - パッケージ名: dbmodels
+│
+├── Makefile                 # ビルド・開発コマンド
+├── bobgen.yaml              # BOB型生成設定
+└── go.mod                   # Go依存関係
+```
+
 ## 技術スタック
 
 - フレームワーク: [Gin](https://github.com/gin-gonic/gin)
-- ログ: [zap](https://github.com/uber-go/zap) (構造化ログ)
+- クエリビルダー: [BOB](https://github.com/stephenafamo/bob) (型安全なSQLクエリビルダー)
 - OpenAPI: [oapi-codegen](https://github.com/oapi-codegen/oapi-codegen) (コード生成)
 - ホットリロード: [Air](https://github.com/air-verse/air)
 
