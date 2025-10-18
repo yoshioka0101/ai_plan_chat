@@ -11,11 +11,11 @@ backend/
 │
 ├── config/                   # 設定管理（環境変数、設定ファイル読み込み）
 │
-├── internal/                 # プライベートコード
-│   ├── model/               # ドメインエンティティ（ビジネスロジックを持つ）
+├── internal/
+│   ├── entity/              # ドメインエンティティ（データ構造のみ）
 │   ├── repository/          # Repositoryインターフェース定義
 │   ├── infrastructure/      # Repository実装（DB依存コード）
-│   ├── usecase/             # ユースケース層（ビジネスロジックのオーケストレーション）
+│   ├── usecase/             # ユースケース層（ビジネスロジック）
 │   │
 │   ├── http/                # HTTP層
 │   │   ├── handler/        # HTTPリクエスト処理
@@ -30,9 +30,9 @@ backend/
 │   │   ├── components/     # 再利用可能なコンポーネント
 │   │   └── paths/          # エンドポイント定義
 │   │
-│   └── gen/                 # 自動生成コード（編集禁止）
+│   └── gen/                 # 自動生成コード
 │       ├── api/            # OpenAPI生成コード (oapi-codegen)
-│       └── db/             # BOB生成コード (bobgen) - パッケージ名: dbmodels
+│       └── db/             # BOB生成コード (bobgen)
 │
 ├── Makefile                 # ビルド・開発コマンド
 ├── bobgen.yaml              # BOB型生成設定
