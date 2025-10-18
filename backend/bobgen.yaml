@@ -1,0 +1,34 @@
+# BOB Type Generation Configuration
+# Created: 2025-10-16
+# Purpose: Generate Go types from MySQL database schema
+
+# 出力先とパッケージ名
+output: internal/gen/db
+pkgname: dbmodels
+
+# テストファイルは生成しない
+no-tests: true
+
+# MySQL設定
+mysql:
+  # データベース接続文字列 (環境変数で上書き可能)
+  # export DB_DSN="user:password@tcp(localhost:3306)/dbname?parseTime=true"
+  dsn: "${DB_DSN:-root:password@tcp(localhost:3306)/ai_chat_task?parseTime=true}"
+
+  # 除外するテーブル
+  except:
+    - schema_migrations
+
+  # タグの命名規則
+  struct-tag-casing: snake  # db:"created_at" 形式
+
+  # 無視するフィールド
+  tag-ignore-fields: []
+
+  # リレーションシップの生成を有効化
+  relationships: true
+
+  # NULL可能な型の扱い
+  # - sql (デフォルト): sql.NullString, sql.NullInt64 など使用
+  # - pointer: *string, *int など使用
+  null-type-strategy: sql
