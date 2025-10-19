@@ -1,6 +1,7 @@
 
 get:
   summary: GetTask
+  description: タスクの単一取得
   operationId: getTask
   parameters:
     - name: id
@@ -30,6 +31,7 @@ get:
             $ref: '../components/schemas/ErrorResponse.yaml'
 put:
   summary: UpdateTask
+  description: タスクの更新
   operationId: updateTask
   parameters:
     - name: id
@@ -65,6 +67,7 @@ put:
             $ref: '../components/schemas/ErrorResponse.yaml'
 patch:
   summary: EditTask
+  description: タスクの編集
   operationId: editTask
   parameters:
     - name: id
@@ -100,6 +103,7 @@ patch:
             $ref: '../components/schemas/ErrorResponse.yaml'
 delete:
   summary: DeleteTask
+  description: タスクの削除
   operationId: deleteTask
   parameters:
     - name: id

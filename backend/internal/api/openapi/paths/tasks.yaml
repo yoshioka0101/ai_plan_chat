@@ -1,6 +1,7 @@
 
 get:
   summary: GetTaskList
+  description: タスクの一覧取得
   operationId: getTaskList
   responses:
     '200':
@@ -19,6 +20,7 @@ get:
             $ref: '../components/schemas/ErrorResponse.yaml'
 post:
   summary: CreateTask
+  description: タスクの新規作成
   operationId: createTask
   requestBody:
     required: true

@@ -22,6 +22,7 @@ paths:
   /tasks:
     get:
       summary: GetTaskList
+      description: タスクの一覧取得
       operationId: getTaskList
       responses:
         '200':
@@ -40,6 +41,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
       summary: CreateTask
+      description: タスクの新規作成
       operationId: createTask
       requestBody:
         required: true
@@ -63,6 +65,7 @@ paths:
   /tasks/{id}:
     get:
       summary: GetTask
+      description: タスクの単一取得
       operationId: getTask
       parameters:
         - name: id
@@ -92,6 +95,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
     put:
       summary: UpdateTask
+      description: タスクの更新
       operationId: updateTask
       parameters:
         - name: id
@@ -127,6 +131,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
     patch:
       summary: EditTask
+      description: タスクの編集
       operationId: editTask
       parameters:
         - name: id
@@ -162,6 +167,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
       summary: DeleteTask
+      description: タスクの削除
       operationId: deleteTask
       parameters:
         - name: id
