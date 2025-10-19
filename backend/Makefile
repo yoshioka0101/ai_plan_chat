@@ -53,12 +53,12 @@ test:
 
 # コードの静的解析
 lint:
-	@echo "コードの lint をしますs"
+	@echo "コードの lint を実行しています..."
 	@if command -v golangci-lint >/dev/null 2>&1; then \
-		golangci-lint run; \
+		golangci-lint run && echo "✅ リンターチェック完了 - エラーなし"; \
 	else \
 		echo "golangci-lint がインストールされていません。go vet を使用します。"; \
-		go vet ./...; \
+		go vet ./... && echo "✅ go vet チェック完了 - エラーなし"; \
 	fi
 
 # コードフォーマット

@@ -60,8 +60,6 @@ func Load() *Config {
 	return config
 }
 
-
-
 // getEnv 環境変数を取得し、デフォルト値を設定
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
@@ -69,7 +67,6 @@ func getEnv(key, defaultValue string) string {
 	}
 	return defaultValue
 }
-
 
 // buildDSN データベース接続文字列を構築
 func buildDSN(db DatabaseConfig) string {
