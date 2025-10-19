@@ -3,8 +3,8 @@
 # Purpose: Generate Go types from MySQL database schema
 
 # 出力先とパッケージ名
-output: internal/gen/db
-pkgname: dbmodels
+output: gen/models
+pkgname: models
 
 # テストファイルは生成しない
 no-tests: true
@@ -16,8 +16,9 @@ mysql:
   dsn: "${DB_DSN:-root:password@tcp(localhost:3306)/ai_chat_task?parseTime=true}"
 
   # 除外するテーブル
-  except:
+  blacklist:
     - schema_migrations
+    - atlas_schema_revisions
 
   # タグの命名規則
   struct-tag-casing: snake  # db:"created_at" 形式
