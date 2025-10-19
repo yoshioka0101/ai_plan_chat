@@ -2,7 +2,10 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 // Config アプリケーションの設定を管理する構造体
@@ -27,6 +30,11 @@ type DatabaseConfig struct {
 
 // Load 環境変数から設定を読み込む
 func Load() *Config {
+	// .envファイルを読み込む（エラーは無視 - 環境変数が直接設定されている場合もあるため）
+	if err := godotenv.Load(); err != nil {
+		log.Printf("Warning: .env file not found or could not be loaded: %v", err)
+	}
+
 	// ポート設定（デフォルト8080）
 	port := os.Getenv("PORT")
 	if port == "" {

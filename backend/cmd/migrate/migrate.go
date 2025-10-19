@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/yoshioka0101/ai_plan_chat/config"
@@ -13,10 +14,10 @@ import (
 func main() {
 	// 設定を読み込み
 	cfg := config.Load()
-	
+
 	// データベース接続文字列を設定から取得
 	dsn := cfg.Database.DSN
-	log.Printf("Using database DSN: %s", dsn)
+	log.Printf("Using database DSN: %s", maskDSN(dsn))
 
 	// データベースに接続
 	db, err := sql.Open("mysql", dsn)
