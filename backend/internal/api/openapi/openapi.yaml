@@ -8,18 +8,22 @@ servers:
     description: Development server
 paths:
   /health:
-    get:
-      summary: Health check endpoint
-      description: Health check のためのエンドポイント
-      operationId: GetHealth
-      responses:
-        '200':
-          description: Successful health check
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HealthResponse'
+    $ref: './paths/health.yaml'
+  /tasks:
+    $ref: './paths/tasks.yaml'
+  /tasks/{id}:
+    $ref: './paths/tasks_id.yaml'
 components:
   schemas:
     HealthResponse:
       $ref: './components/schemas/HealthResponse.yaml'
+    Task:
+      $ref: './components/schemas/Task.yaml'
+    CreateTaskRequest:
+      $ref: './components/schemas/CreateTaskRequest.yaml'
+    UpdateTaskRequest:
+      $ref: './components/schemas/UpdateTaskRequest.yaml'
+    EditTaskRequest:
+      $ref: './components/schemas/EditTaskRequest.yaml'
+    ErrorResponse:
+      $ref: './components/schemas/ErrorResponse.yaml'

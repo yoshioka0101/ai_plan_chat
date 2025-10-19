@@ -9,7 +9,7 @@ servers:
 paths:
   /health:
     get:
-      summary: Health check endpoint
+      summary: GetHealth
       description: Health check のためのエンドポイント
       operationId: GetHealth
       responses:
@@ -19,6 +19,172 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
+  /tasks:
+    get:
+      summary: GetTaskList
+      operationId: getTaskList
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: CreateTask
+      operationId: createTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskRequest'
+      responses:
+        '201':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tasks/{id}:
+    get:
+      summary: GetTask
+      operationId: getTask
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: UpdateTask
+      operationId: updateTask
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      summary: EditTask
+      operationId: editTask
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditTaskRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: DeleteTask
+      operationId: deleteTask
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: No Content
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
     HealthResponse:
@@ -29,3 +195,137 @@ components:
           example: ok
       required:
         - status
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: タスクID
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        title:
+          type: string
+          description: タスクのタイトル
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+          description: タスクの説明
+        due_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: タスクの期限
+        status:
+          type: string
+          description: タスクの状態
+          enum:
+            - ''
+            - todo
+            - in_progress
+            - done
+        created_at:
+          type: string
+          format: date-time
+          description: 作成日時
+        updated_at:
+          type: string
+          format: date-time
+          description: 更新日時
+      required:
+        - id
+        - title
+        - status
+        - created_at
+        - updated_at
+    CreateTaskRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          description: タスクのタイトル
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+          description: タスクの説明
+        due_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: タスクの期限
+        status:
+          type: string
+          description: タスクの状態
+          enum:
+            - ''
+            - todo
+            - in_progress
+            - done
+      required:
+        - title
+        - status
+    UpdateTaskRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          description: タスクのタイトル
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+          description: タスクの説明
+        due_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: タスクの期限
+        status:
+          type: string
+          description: タスクの状態
+          enum:
+            - ''
+            - todo
+            - in_progress
+            - done
+      required:
+        - title
+        - status
+    EditTaskRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          description: タスクのタイトル
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+          description: タスクの説明
+        due_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: タスクの期限
+        status:
+          type: string
+          description: タスクの状態
+          enum:
+            - ''
+            - todo
+            - in_progress
+            - done
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          description: エラーコード
+        message:
+          type: string
+          description: エラーメッセージ
