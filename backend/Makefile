@@ -1,4 +1,4 @@
-.PHONY: help lint fmt test dev build openapi-gen gen-api openapi redoc install dev-full
+.PHONY: help lint fmt test dev build openapi-gen gen-api gen-db openapi redoc install dev-full test-db migrate
 
 # デフォルトターゲット - ヘルプを表示
 help:
@@ -10,12 +10,15 @@ help:
 	@echo "  fmt         コードフォーマット"
 	@echo "  build       アプリケーションのビルド"
 	@echo "  gen-api     OpenAPIからコードを生成"
+	@echo "  gen-db      データベースからGo型を生成"
 	@echo "  redoc       ReDoc でOpenAPI仕様を確認"
 	@echo "  bundle      OpenAPIファイルを結合"
 	@echo "  dev-full    コード生成 + ドキュメント + 開発サーバー"
 	@echo "  openapi-gen OpenAPIからコードを生成（従来版）"
 	@echo "  openapi     ReDoc を起動（redoc のエイリアス）"
 	@echo "  ci          GitHub Actions ワークフローの雛形をコピー"
+	@echo "  test-db     データベース接続テスト"
+	@echo "  migrate     マイグレーション実行"
 	@echo "  help        このヘルプを表示"
 
 # 必要なツールをインストール
@@ -24,12 +27,13 @@ install:
 	@echo "Go ツール:"
 	go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
 	go install github.com/air-verse/air@latest
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 	@echo "Node.js ツール:"
 	npm install -g http-server
 	npm install -g @redocly/cli
 	@echo ""
 	@echo "✅ インストール完了"
-	@echo "使い方: make gen-api → make redoc → make dev"
+	@echo "使い方: make gen-api → make gen-db → make redoc → make dev"
 
 # 開発環境の立ち上げ
 dev:
@@ -44,12 +48,7 @@ test:
 # コードの静的解析
 lint:
 	@echo "コードの lint をしますs"
-	@if command -v golangci-lint >/dev/null 2>&1; then \
-		golangci-lint run; \
-	else \
-		echo "golangci-lint がインストールされていません。go vet を使用します。"; \
-		go vet ./...; \
-	fi
+	./bin/golangci-lint run
 
 # コードフォーマット
 fmt:
@@ -75,6 +74,14 @@ gen-api: redocly-bundle ## コード生成（oapi-codegen）
 	@cd internal/api/openapi && go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen --config=./oapi-codegen.yaml ./openapi-bundle.yaml
 	@go mod tidy
 
+.PHONY: gen-db
+gen-db: ## データベースからGo型を生成（bobgen）
+	@echo "データベースからGo型を生成しています"
+	@echo "DB_DSN環境変数が設定されていない場合は、デフォルト値を使用します"
+	@bobgen mysql -c bobgen.yaml
+	@go mod tidy
+	@echo "✅ データベース型生成完了: internal/gen/db"
+
 # OpenAPIからコードを生成（従来版）
 openapi-gen:
 	@echo "OpenAPIからコードを生成しています"
@@ -89,6 +96,7 @@ redoc: ## redoc を起動する
 dev-full:
 	@echo "統合開発環境を起動中..."
 	@$(MAKE) --no-print-directory gen-api
+	@$(MAKE) --no-print-directory gen-db
 	@echo "APIサーバー: http://localhost:8080"
 	@echo "ReDoc: 別ターミナルで 'make redoc' を実行"
 	@$(MAKE) --no-print-directory dev
@@ -106,3 +114,13 @@ ci:
 	fi
 	cp ../.github/workflows/ci.yml.example ../.github/workflows/$(FILENAME).yml
 	@echo ".github/workflows/$(FILENAME).yml を作成しました"
+
+# データベース接続テスト
+test-db:
+	@echo "🔍 データベース接続テスト実行中..."
+	@go run cmd/test-db/test-db.go
+
+# マイグレーション実行
+migrate:
+	@echo "🚀 マイグレーション実行中..."
+	@go run cmd/migrate/migrate.go
