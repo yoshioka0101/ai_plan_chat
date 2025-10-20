@@ -1,31 +1,15 @@
-# BOB Type Generation Configuration
-# Created: 2025-10-16
-# Purpose: Generate Go types from MySQL database schema
-
-# 出力先とパッケージ名
-output: gen/models
-pkgname: models
-
-# テストファイルは生成しない
-no-tests: true
-
 # MySQL設定
 mysql:
-  # データベース接続文字列 (環境変数で上書き可能)
-  # export DB_DSN="user:password@tcp(localhost:3306)/dbname?parseTime=true"
   dsn: "${DB_DSN:-root:password@tcp(localhost:3306)/ai_chat_task?parseTime=true}"
 
-  # 除外するテーブル
-  blacklist:
-    - schema_migrations
-    - atlas_schema_revisions
+  # 出力先とパッケージ名
+  output: gen/models
+  pkgname: models
 
-  # タグの命名規則
-  struct-tag-casing: snake  # db:"created_at" 形式
+  # テストファイルは生成しない
+  no-tests: true
 
-  # 無視するフィールド
-  tag-ignore-fields: []
-
+  
   # リレーションシップの生成を有効化
   relationships: true
 
