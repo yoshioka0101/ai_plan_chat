@@ -68,13 +68,19 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 		return
 	}
 
+	// statusのデフォルト値設定
+	status := "todo" // デフォルト値
+	if req.Status != nil {
+		status = string(*req.Status)
+	}
+
 	// バリデーション
-	if err := validation.ValidateCreateTaskRequest(req.Title, req.Description, req.DueAt, string(req.Status)); err != nil {
+	if err := validation.ValidateCreateTaskRequest(req.Title, req.Description, req.DueAt, status); err != nil {
 		_ = c.Error(apperr.ErrTaskValidationError)
 		return
 	}
 
-	task, err := h.usecase.CreateTask(ctx, req.Title, req.Description, req.DueAt, string(req.Status))
+	task, err := h.usecase.CreateTask(ctx, req.Title, req.Description, req.DueAt, status)
 	if err != nil {
 		if strings.Contains(err.Error(), "validation") {
 			_ = c.Error(apperr.ErrTaskValidationError)
@@ -105,13 +111,20 @@ func (h *TaskHandler) UpdateTask(c *gin.Context) {
 		return
 	}
 
-	// バリデーション
-	if err := validation.ValidateUpdateTaskRequest(req.Title, req.Description, req.DueAt, string(req.Status)); err != nil {
+	// statusの検証（空文字列の場合はエラー）
+	status := string(req.Status)
+	if status == "" {
 		_ = c.Error(apperr.ErrTaskValidationError)
 		return
 	}
 
-	task, err := h.usecase.UpdateTask(ctx, taskID, req.Title, req.Description, req.DueAt, string(req.Status))
+	// バリデーション
+	if err := validation.ValidateUpdateTaskRequest(req.Title, req.Description, req.DueAt, status); err != nil {
+		_ = c.Error(apperr.ErrTaskValidationError)
+		return
+	}
+
+	task, err := h.usecase.UpdateTask(ctx, taskID, req.Title, req.Description, req.DueAt, status)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			_ = c.Error(apperr.ErrTaskNotFound)
