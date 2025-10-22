@@ -54,3 +54,18 @@ func (p *TaskPresenter) GetTaskList(tasks models.TaskSlice) []api.Task {
 	}
 	return result
 }
+
+// CreateTask はBOBモデルをCreateTask APIレスポンスに変換します
+func (p *TaskPresenter) CreateTask(task *models.Task) api.Task {
+	return p.GetTask(task)
+}
+
+// UpdateTask はBOBモデルをUpdateTask APIレスポンスに変換します
+func (p *TaskPresenter) UpdateTask(task *models.Task) api.Task {
+	return p.GetTask(task)
+}
+
+// EditTask はBOBモデルをEditTask APIレスポンスに変換します
+func (p *TaskPresenter) EditTask(task *models.Task) api.Task {
+	return p.GetTask(task)
+}

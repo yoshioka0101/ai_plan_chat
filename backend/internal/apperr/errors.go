@@ -25,15 +25,45 @@ func NewError(status int, message string) *AppError {
 
 // Task関連のエラー
 var (
+	// 400 Bad Request
+	ErrTaskValidationError = NewError(
+		http.StatusBadRequest,
+		"Validation error",
+	)
+
 	// 404 Not Found
 	ErrTaskNotFound = NewError(
 		http.StatusNotFound,
 		"Task not found",
 	)
 
+	// 409 Conflict
+	ErrTaskAlreadyExists = NewError(
+		http.StatusConflict,
+		"Task already exists",
+	)
+
 	// 500 Internal Server Error
 	ErrTaskInternalError = NewError(
 		http.StatusInternalServerError,
 		"Internal server error",
+	)
+
+	// 500 Internal Server Error - Create failed
+	ErrTaskCreateFailed = NewError(
+		http.StatusInternalServerError,
+		"Failed to create task",
+	)
+
+	// 500 Internal Server Error - Update failed
+	ErrTaskUpdateFailed = NewError(
+		http.StatusInternalServerError,
+		"Failed to update task",
+	)
+
+	// 500 Internal Server Error - Delete failed
+	ErrTaskDeleteFailed = NewError(
+		http.StatusInternalServerError,
+		"Failed to delete task",
 	)
 )
