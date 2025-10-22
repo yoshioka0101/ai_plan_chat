@@ -1,19 +1,16 @@
 # MySQL設定
 mysql:
-  dsn: "${DB_DSN:-root:password@tcp(localhost:3306)/ai_chat_task?parseTime=true}"
+  dsn: "root:password@tcp(localhost:3306)/ai_chat_task?parseTime=true"
 
   # 出力先とパッケージ名
-  output: gen/models
+  output: ./gen/models
   pkgname: models
 
-  # テストファイルは生成しない
-  no-tests: true
+  only:
+    tasks:
 
-  
   # リレーションシップの生成を有効化
   relationships: true
 
-  # NULL可能な型の扱い
-  # - sql (デフォルト): sql.NullString, sql.NullInt64 など使用
-  # - pointer: *string, *int など使用
   null-type-strategy: sql
+

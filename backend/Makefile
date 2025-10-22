@@ -125,8 +125,10 @@ ci:
 gen-models:
 	@echo "データベーススキーマからGoの型を生成しています..."
 	@export PATH=$$PATH:$$(go env GOPATH)/bin && bobgen-mysql
+	@echo "不要なファイルをクリーンアップしています..."
+	@find gen/models -name "bob_*" -type f -delete 2>/dev/null || true
 	@go mod tidy
-	@echo "✅ gen/models/ に型が生成されました"
+	@echo "✅ gen/models/ にテーブルモデルが生成されました"
 
 # スキーマから差分マイグレーションを生成
 migrate-diff:
