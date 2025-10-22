@@ -35,11 +35,11 @@ func SetupRoutes(server *Server) *gin.Engine {
 	tasks := r.Group("/tasks")
 	{
 		tasks.GET("", server.TaskHandler.GetTaskList)
-		// tasks.POST("", server.TaskHandler.CreateTask)
-		// tasks.GET("/:id", server.TaskHandler.GetTask)
-		// tasks.PUT("/:id", server.TaskHandler.UpdateTask)
-		// tasks.PATCH("/:id", server.TaskHandler.EditTask)
-		// tasks.DELETE("/:id", server.TaskHandler.DeleteTask)
+		tasks.POST("", server.TaskHandler.CreateTask)
+		tasks.GET("/:id", server.TaskHandler.GetTask)
+		tasks.PUT("/:id", server.TaskHandler.UpdateTask)
+		tasks.PATCH("/:id", server.TaskHandler.EditTask)
+		tasks.DELETE("/:id", server.TaskHandler.DeleteTask)
 	}
 
 	return r
