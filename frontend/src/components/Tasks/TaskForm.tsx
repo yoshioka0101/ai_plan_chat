@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { Task, CreateTaskRequest, TaskPriority } from '../../types/task';
+import type { Task, CreateTaskRequest, TaskStatus } from '../../types/task';
 
 interface TaskFormProps {
   task?: Task;
@@ -11,14 +11,14 @@ export const TaskForm = ({ task, onSubmit, onCancel }: TaskFormProps) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
-  const [priority, setPriority] = useState<TaskPriority | ''>('');
+  const [status, setStatus] = useState<TaskStatus>('todo');
 
   useEffect(() => {
     if (task) {
       setTitle(task.title);
       setDescription(task.description || '');
-      setDueDate(task.due_date ? task.due_date.split('T')[0] : '');
-      setPriority(task.priority || '');
+      setDueDate(task.due_at ? task.due_at.split('T')[0] : '');
+      setStatus(task.status);
     }
   }, [task]);
 
@@ -28,8 +28,8 @@ export const TaskForm = ({ task, onSubmit, onCancel }: TaskFormProps) => {
     const taskData: CreateTaskRequest = {
       title,
       description: description || undefined,
-      due_date: dueDate || undefined,
-      priority: priority || undefined,
+      due_at: dueDate || undefined,
+      status: status,
     };
 
     onSubmit(taskData);
@@ -115,11 +115,12 @@ export const TaskForm = ({ task, onSubmit, onCancel }: TaskFormProps) => {
 
           <div>
             <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '14px' }}>
-              Priority
+              Status *
             </label>
             <select
-              value={priority}
-              onChange={(e) => setPriority(e.target.value as TaskPriority | '')}
+              value={status}
+              onChange={(e) => setStatus(e.target.value as TaskStatus)}
+              required
               style={{
                 width: '100%',
                 padding: '10px',
@@ -129,10 +130,9 @@ export const TaskForm = ({ task, onSubmit, onCancel }: TaskFormProps) => {
                 boxSizing: 'border-box',
               }}
             >
-              <option value="">None</option>
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
+              <option value="todo">To Do</option>
+              <option value="in_progress">In Progress</option>
+              <option value="done">Done</option>
             </select>
           </div>
         </div>

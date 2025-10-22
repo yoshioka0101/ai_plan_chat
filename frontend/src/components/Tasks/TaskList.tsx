@@ -45,7 +45,14 @@ export const TaskList = () => {
     if (!editingTask) return;
 
     try {
-      const updatedTask = await taskService.updateTask(editingTask.id, taskData);
+      // Use PUT endpoint for full update
+      const updateData = {
+        title: taskData.title,
+        description: taskData.description,
+        due_at: taskData.due_at,
+        status: taskData.status || 'todo',
+      };
+      const updatedTask = await taskService.updateTask(editingTask.id, updateData);
       setTasks(tasks.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
       setEditingTask(undefined);
       setShowForm(false);
@@ -69,7 +76,8 @@ export const TaskList = () => {
 
   const handleStatusChange = async (id: string, status: Task['status']) => {
     try {
-      const updatedTask = await taskService.updateTask(id, { status });
+      // Use PATCH endpoint for partial update
+      const updatedTask = await taskService.editTask(id, { status });
       setTasks(tasks.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
     } catch (err) {
       setError('Failed to update task status. Please try again.');

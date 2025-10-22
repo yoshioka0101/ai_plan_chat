@@ -11,25 +11,12 @@ interface TaskItemProps {
 export const TaskItem = ({ task, onEdit, onDelete, onStatusChange }: TaskItemProps) => {
   const getStatusColor = (status: Task['status']) => {
     switch (status) {
-      case 'completed':
+      case 'done':
         return '#4ade80';
       case 'in_progress':
         return '#60a5fa';
-      case 'cancelled':
-        return '#94a3b8';
-      default:
+      case 'todo':
         return '#fbbf24';
-    }
-  };
-
-  const getPriorityColor = (priority?: Task['priority']) => {
-    switch (priority) {
-      case 'high':
-        return '#ef4444';
-      case 'medium':
-        return '#f59e0b';
-      case 'low':
-        return '#10b981';
       default:
         return '#94a3b8';
     }
@@ -49,20 +36,6 @@ export const TaskItem = ({ task, onEdit, onDelete, onStatusChange }: TaskItemPro
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
             <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>{task.title}</h3>
-            {task.priority && (
-              <span
-                style={{
-                  fontSize: '12px',
-                  padding: '2px 8px',
-                  borderRadius: '4px',
-                  backgroundColor: getPriorityColor(task.priority) + '20',
-                  color: getPriorityColor(task.priority),
-                  fontWeight: '500',
-                }}
-              >
-                {task.priority}
-              </span>
-            )}
           </div>
 
           {task.description && (
@@ -88,15 +61,14 @@ export const TaskItem = ({ task, onEdit, onDelete, onStatusChange }: TaskItemPro
                   fontSize: '12px',
                 }}
               >
-                <option value="pending">Pending</option>
+                <option value="todo">To Do</option>
                 <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
+                <option value="done">Done</option>
               </select>
             </div>
 
-            {task.due_date && (
-              <div>Due: {format(new Date(task.due_date), 'MMM d, yyyy')}</div>
+            {task.due_at && (
+              <div>Due: {format(new Date(task.due_at), 'MMM d, yyyy')}</div>
             )}
           </div>
         </div>
