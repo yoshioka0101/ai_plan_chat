@@ -1,6 +1,10 @@
 name: Claude Code Review
 
 on:
+  push:
+    branches:
+      - main
+      - v1.*
   workflow_dispatch:
 
 permissions:
