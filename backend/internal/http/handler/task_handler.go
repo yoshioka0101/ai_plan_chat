@@ -5,13 +5,12 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	openapi_types "github.com/oapi-codegen/runtime/types"
 	"github.com/yoshioka0101/ai_plan_chat/internal/apperr"
 	"github.com/yoshioka0101/ai_plan_chat/internal/http/presenter"
 	"github.com/yoshioka0101/ai_plan_chat/internal/interfaces"
 )
 
-// TaskHandler はTaskエンドポイントのapi.ServerInterfaceを実装します
+// TaskHandler はタスク関連のHTTPハンドラー
 type TaskHandler struct {
 	usecase   interfaces.TaskUsecase
 	presenter *presenter.TaskPresenter
@@ -24,11 +23,10 @@ func NewTaskHandler(usecase interfaces.TaskUsecase, presenter *presenter.TaskPre
 	}
 }
 
-// GetTask はapi.ServerInterface.GetTaskを実装します
-// (GET /tasks/{id})
-func (h *TaskHandler) GetTask(c *gin.Context, id openapi_types.UUID) {
+// GetTask はタスクの単一取得 (GET /tasks/:id)
+func (h *TaskHandler) GetTask(c *gin.Context) {
 	ctx := c.Request.Context()
-	taskID := id.String()
+	taskID := c.Param("id")
 
 	task, err := h.usecase.GetTask(ctx, taskID)
 	if err != nil {
@@ -53,14 +51,14 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 	c.JSON(http.StatusNotImplemented, gin.H{"message": "Not implemented"})
 }
 
-func (h *TaskHandler) UpdateTask(c *gin.Context, id openapi_types.UUID) {
+func (h *TaskHandler) UpdateTask(c *gin.Context) {
 	c.JSON(http.StatusNotImplemented, gin.H{"message": "Not implemented"})
 }
 
-func (h *TaskHandler) EditTask(c *gin.Context, id openapi_types.UUID) {
+func (h *TaskHandler) EditTask(c *gin.Context) {
 	c.JSON(http.StatusNotImplemented, gin.H{"message": "Not implemented"})
 }
 
-func (h *TaskHandler) DeleteTask(c *gin.Context, id openapi_types.UUID) {
+func (h *TaskHandler) DeleteTask(c *gin.Context) {
 	c.JSON(http.StatusNotImplemented, gin.H{"message": "Not implemented"})
 }
