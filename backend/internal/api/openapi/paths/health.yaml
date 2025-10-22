@@ -1,12 +1,11 @@
-/health:
-  get:
-    summary: Health check endpoint
-    description: Health check のためのエンドポイント
-    operationId: GetHealth
-    responses:
-      '200':
-        description: Successful health check
-        content:
-          application/json:
-            schema:
-              $ref: '../components/schemas/HealthResponse.yaml'
+get:
+  summary: GetHealth
+  description: Health check のためのエンドポイント
+  operationId: GetHealth
+  responses:
+    '200':
+      description: Successful health check
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/HealthResponse.yaml'

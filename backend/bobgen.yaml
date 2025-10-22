@@ -1,0 +1,16 @@
+# MySQL設定
+mysql:
+  dsn: "root:password@tcp(localhost:3306)/ai_chat_task?parseTime=true"
+
+  # 出力先とパッケージ名
+  output: ./gen/models
+  pkgname: models
+
+  only:
+    tasks:
+
+  # リレーションシップの生成を有効化
+  relationships: true
+
+  null-type-strategy: sql
+

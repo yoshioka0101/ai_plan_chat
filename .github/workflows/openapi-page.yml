@@ -31,7 +31,7 @@ jobs:
       - name: Generate API Documentation
         run: |
           mkdir -p docs
-          npx @redocly/cli build-docs backend/openapi.yaml --output docs/index.html
+          npx @redocly/cli build-docs backend/internal/api/openapi/openapi.yaml --output docs/index.html
       
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
