@@ -1,10 +1,11 @@
 name: Claude Code Review
 
 on:
-  push:
+  pull_request:
     branches:
       - main
       - v1.*
+      - fix_ci
   workflow_dispatch:
 
 permissions:
@@ -20,7 +21,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Run Code Review
         uses: anthropics/claude-code-action@v1
