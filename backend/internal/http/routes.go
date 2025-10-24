@@ -1,6 +1,7 @@
 package http
 
 import (
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/yoshioka0101/ai_plan_chat/internal/http/handler"
 	"github.com/yoshioka0101/ai_plan_chat/internal/middleware"
@@ -28,18 +29,29 @@ func SetupRoutes(server *Server) *gin.Engine {
 	r.Use(middleware.Logger(logger))
 	r.Use(gin.Recovery())
 
+	// CORS configuration
+	config := cors.DefaultConfig()
+	config.AllowOrigins = []string{"http://localhost:5173"} // Vite dev server
+	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
+	config.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
+	r.Use(cors.New(config))
+
 	// Health check
 	r.GET("/health", server.HealthHandler.GetHealth)
 
-	// Task endpoints
-	tasks := r.Group("/tasks")
+	// API v1 routes
+	v1 := r.Group("/api/v1")
 	{
-		tasks.GET("", server.TaskHandler.GetTaskList)
-		tasks.POST("", server.TaskHandler.CreateTask)
-		tasks.GET("/:id", server.TaskHandler.GetTask)
-		tasks.PUT("/:id", server.TaskHandler.UpdateTask)
-		tasks.PATCH("/:id", server.TaskHandler.EditTask)
-		tasks.DELETE("/:id", server.TaskHandler.DeleteTask)
+		// Task endpoints
+		tasks := v1.Group("/tasks")
+		{
+			tasks.GET("", server.TaskHandler.GetTaskList)
+			tasks.POST("", server.TaskHandler.CreateTask)
+			tasks.GET("/:id", server.TaskHandler.GetTask)
+			tasks.PUT("/:id", server.TaskHandler.UpdateTask)
+			tasks.PATCH("/:id", server.TaskHandler.EditTask)
+			tasks.DELETE("/:id", server.TaskHandler.DeleteTask)
+		}
 	}
 
 	return r

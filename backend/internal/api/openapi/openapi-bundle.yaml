@@ -227,7 +227,6 @@ components:
           type: string
           description: タスクの状態
           enum:
-            - ''
             - todo
             - in_progress
             - done
@@ -266,13 +265,12 @@ components:
           type: string
           description: タスクの状態
           enum:
-            - ''
             - todo
             - in_progress
             - done
+          default: todo
       required:
         - title
-        - status
     UpdateTaskRequest:
       type: object
       properties:
@@ -294,7 +292,6 @@ components:
           type: string
           description: タスクの状態
           enum:
-            - ''
             - todo
             - in_progress
             - done
@@ -322,7 +319,6 @@ components:
           type: string
           description: タスクの状態
           enum:
-            - ''
             - todo
             - in_progress
             - done

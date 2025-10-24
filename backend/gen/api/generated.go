@@ -22,7 +22,6 @@ import (
 // Defines values for CreateTaskRequestStatus.
 const (
 	CreateTaskRequestStatusDone       CreateTaskRequestStatus = "done"
-	CreateTaskRequestStatusEmpty      CreateTaskRequestStatus = ""
 	CreateTaskRequestStatusInProgress CreateTaskRequestStatus = "in_progress"
 	CreateTaskRequestStatusTodo       CreateTaskRequestStatus = "todo"
 )
@@ -30,7 +29,6 @@ const (
 // Defines values for EditTaskRequestStatus.
 const (
 	EditTaskRequestStatusDone       EditTaskRequestStatus = "done"
-	EditTaskRequestStatusEmpty      EditTaskRequestStatus = ""
 	EditTaskRequestStatusInProgress EditTaskRequestStatus = "in_progress"
 	EditTaskRequestStatusTodo       EditTaskRequestStatus = "todo"
 )
@@ -38,7 +36,6 @@ const (
 // Defines values for TaskStatus.
 const (
 	TaskStatusDone       TaskStatus = "done"
-	TaskStatusEmpty      TaskStatus = ""
 	TaskStatusInProgress TaskStatus = "in_progress"
 	TaskStatusTodo       TaskStatus = "todo"
 )
@@ -46,7 +43,6 @@ const (
 // Defines values for UpdateTaskRequestStatus.
 const (
 	UpdateTaskRequestStatusDone       UpdateTaskRequestStatus = "done"
-	UpdateTaskRequestStatusEmpty      UpdateTaskRequestStatus = ""
 	UpdateTaskRequestStatusInProgress UpdateTaskRequestStatus = "in_progress"
 	UpdateTaskRequestStatusTodo       UpdateTaskRequestStatus = "todo"
 )
@@ -60,7 +56,7 @@ type CreateTaskRequest struct {
 	DueAt *time.Time `json:"due_at"`
 
 	// Status タスクの状態
-	Status CreateTaskRequestStatus `json:"status"`
+	Status *CreateTaskRequestStatus `json:"status,omitempty"`
 
 	// Title タスクのタイトル
 	Title string `json:"title"`

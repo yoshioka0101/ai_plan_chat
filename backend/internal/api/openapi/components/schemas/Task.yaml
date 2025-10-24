@@ -23,7 +23,7 @@ properties:
   status:
     type: string
     description: タスクの状態
-    enum: ['', 'todo', 'in_progress', 'done']
+    enum: ['todo', 'in_progress', 'done']
   created_at:
     type: string
     format: date-time
