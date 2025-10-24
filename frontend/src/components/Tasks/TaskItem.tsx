@@ -86,7 +86,7 @@ export const TaskItem = ({ task, onEdit, onDelete, onStatusChange }: TaskItemPro
               fontSize: '14px',
             }}
           >
-            Edit
+            編集
           </button>
           <button
             onClick={() => onDelete(task.id)}
@@ -100,7 +100,7 @@ export const TaskItem = ({ task, onEdit, onDelete, onStatusChange }: TaskItemPro
               fontSize: '14px',
             }}
           >
-            Delete
+            削除
           </button>
         </div>
       </div>

@@ -19,6 +19,12 @@ export const TaskForm = ({ task, onSubmit, onCancel }: TaskFormProps) => {
       setDescription(task.description || '');
       setDueDate(task.due_at ? task.due_at.split('T')[0] : '');
       setStatus(task.status);
+    } else {
+      // 新規作成時はフォームをリセット
+      setTitle('');
+      setDescription('');
+      setDueDate('');
+      setStatus('todo');
     }
   }, [task]);
 
@@ -39,15 +45,14 @@ export const TaskForm = ({ task, onSubmit, onCancel }: TaskFormProps) => {
     <div
       style={{
         backgroundColor: '#f9fafb',
-        padding: '24px',
-        borderRadius: '8px',
-        marginBottom: '24px',
+        padding: '20px',
+        borderRadius: '12px',
         border: '1px solid #e5e7eb',
       }}
     >
-      <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', fontWeight: '600' }}>
-        {task ? 'Edit Task' : 'Create New Task'}
-      </h2>
+      <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>
+        {task ? '✏️ タスクを編集' : '✨ タスクを作成'}
+      </h3>
 
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: '16px' }}>
@@ -93,7 +98,7 @@ export const TaskForm = ({ task, onSubmit, onCancel }: TaskFormProps) => {
           />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '16px' }}>
           <div>
             <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '14px' }}>
               Due Date
@@ -137,37 +142,54 @@ export const TaskForm = ({ task, onSubmit, onCancel }: TaskFormProps) => {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-          <button
-            type="button"
-            onClick={onCancel}
-            style={{
-              padding: '10px 20px',
-              borderRadius: '6px',
-              border: '1px solid #d1d5db',
-              backgroundColor: '#ffffff',
-              color: '#374151',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500',
-            }}
-          >
-            Cancel
-          </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px' }}>
           <button
             type="submit"
             style={{
-              padding: '10px 20px',
-              borderRadius: '6px',
+              width: '100%',
+              padding: '12px',
+              borderRadius: '8px',
               border: 'none',
               backgroundColor: '#3b82f6',
               color: '#ffffff',
               cursor: 'pointer',
               fontSize: '14px',
-              fontWeight: '500',
+              fontWeight: '600',
+              boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#2563eb';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#3b82f6';
             }}
           >
-            {task ? 'Update Task' : 'Create Task'}
+            {task ? 'タスクを更新' : 'タスクを作成'}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            style={{
+              width: '100%',
+              padding: '12px',
+              borderRadius: '8px',
+              border: '1px solid #d1d5db',
+              backgroundColor: '#ffffff',
+              color: '#374151',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '600',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#f9fafb';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#ffffff';
+            }}
+          >
+            キャンセル
           </button>
         </div>
       </form>
