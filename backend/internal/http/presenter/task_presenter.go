@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/google/uuid"
+	"github.com/oapi-codegen/runtime/types"
 	"github.com/yoshioka0101/ai_plan_chat/gen/api"
 	"github.com/yoshioka0101/ai_plan_chat/gen/models"
 )
@@ -27,7 +28,7 @@ func (p *TaskPresenter) GetTask(task *models.Task) api.Task {
 	}
 
 	response := api.Task{
-		Id:        id,
+		Id:        types.UUID(id),
 		Title:     task.Title,
 		Status:    api.TaskStatus(task.Status),
 		CreatedAt: task.CreatedAt,

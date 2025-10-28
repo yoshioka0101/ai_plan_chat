@@ -42,6 +42,10 @@ components:
       $ref: './components/schemas/ErrorResponse.yaml'
     User:
       $ref: './components/schemas/User.yaml'
+    LoginRequest:
+      $ref: './components/schemas/LoginRequest.yaml'
+    SignupRequest:
+      $ref: './components/schemas/SignupRequest.yaml'
     AuthResponse:
       $ref: './components/schemas/AuthResponse.yaml'
     ChatRequest:

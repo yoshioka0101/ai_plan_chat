@@ -15,6 +15,9 @@ type Config struct {
 
 	// データベース設定
 	Database DatabaseConfig
+
+	// 認証設定
+	Auth AuthConfig
 }
 
 // DatabaseConfig データベース接続設定
@@ -26,6 +29,14 @@ type DatabaseConfig struct {
 	Password string `json:"-"`
 	Name     string `json:"db_name"`
 	DSN      string `json:"-"`
+}
+
+// AuthConfig 認証設定
+type AuthConfig struct {
+	JWTSecret          string `json:"-"`
+	GoogleClientID     string `json:"-"`
+	GoogleClientSecret string `json:"-"`
+	GoogleRedirectURL  string `json:"-"`
 }
 
 // Load 環境変数から設定を読み込む
@@ -83,6 +94,39 @@ func Load() *Config {
 		)
 	}
 
+	// JWTシークレット（必須設定）
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		fmt.Println("❌ JWT_SECRET environment variable is not set!")
+		fmt.Println()
+		fmt.Println("=== JWT_SECRET Generation Help ===")
+		fmt.Println("To generate a secure JWT_SECRET, run:")
+		fmt.Println("   openssl rand -base64 32")
+		fmt.Println()
+		fmt.Println("Then set the environment variable:")
+		fmt.Println("   export JWT_SECRET=\"your-generated-secret-here\"")
+		fmt.Println("==================================")
+		log.Fatal("JWT_SECRET environment variable is required. Please set a strong secret key.")
+	}
+
+	// JWT_SECRETの強度チェック（最低32文字）
+	if len(jwtSecret) < 32 {
+		log.Fatal("JWT_SECRET must be at least 32 characters long for security reasons.")
+	}
+
+	// GoogleOAuth設定（必須設定）
+	googleClientID := os.Getenv("GOOGLE_CLIENT_ID")
+	googleClientSecret := os.Getenv("GOOGLE_CLIENT_SECRET")
+	googleRedirectURL := os.Getenv("GOOGLE_REDIRECT_URL")
+	if googleRedirectURL == "" {
+		googleRedirectURL = "http://localhost:8080/auth/google/callback"
+	}
+
+	// GoogleOAuth設定の検証
+	if googleClientID == "" || googleClientSecret == "" {
+		log.Fatal("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables are required for OAuth authentication.")
+	}
+
 	config := &Config{
 		Port: port,
 
@@ -94,6 +138,13 @@ func Load() *Config {
 			Password: os.Getenv("DB_PASSWORD"),
 			Name:     os.Getenv("DB_NAME"),
 			DSN:      dsn,
+		},
+
+		Auth: AuthConfig{
+			JWTSecret:          jwtSecret,
+			GoogleClientID:     googleClientID,
+			GoogleClientSecret: googleClientSecret,
+			GoogleRedirectURL:  googleRedirectURL,
 		},
 	}
 

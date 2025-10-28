@@ -28,7 +28,7 @@ func main() {
 	log.Printf("Starting server on port %s", cfg.Port)
 
 	// サーバーを初期化
-	r := InitializeServer(db)
+	r := InitializeServer(db, cfg)
 
 	// HTTPサーバーを作成
 	addr := fmt.Sprintf(":%s", cfg.Port)
