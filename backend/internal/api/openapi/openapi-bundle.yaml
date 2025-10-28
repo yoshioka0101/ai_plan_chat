@@ -191,7 +191,197 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /auth/google/callback:
+    post:
+      summary: GoogleCallback
+      description: Google OAuth 2.0コールバック処理
+      operationId: googleCallback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+              properties:
+                code:
+                  type: string
+                  description: Google OAuthから返されたauthorization code
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /chat:
+    post:
+      summary: InterpretAndCreate
+      description: 自然言語入力によるAI解析とタスク/イベント登録
+      operationId: interpretAndCreate
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Unprocessable Entity (AI解析エラー)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /interpretations:
+    get:
+      summary: ListInterpretations
+      description: AI解析履歴の取得
+      operationId: listInterpretations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          description: AI解析のtype絞り込み
+          schema:
+            type: string
+            enum:
+              - task
+              - event
+              - unknown
+        - name: limit
+          in: query
+          description: '取得件数（デフォルト: 20）'
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          description: オフセット（ページネーション）
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - interpretations
+                  - total
+                properties:
+                  interpretations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AIInterpretation'
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /interpretations/{id}:
+    get:
+      summary: GetInterpretation
+      description: 特定のAI解析結果の詳細取得
+      operationId: getInterpretation
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: AI解釈ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIInterpretation'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     HealthResponse:
       type: object
@@ -331,3 +521,120 @@ components:
         message:
           type: string
           description: エラーメッセージ
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ユーザーID
+        nickname:
+          type: string
+          description: ニックネーム/表示名
+        avatar:
+          type: string
+          nullable: true
+          description: アバター画像URL
+        created_at:
+          type: string
+          format: date-time
+          description: 作成日時
+      required:
+        - id
+        - nickname
+        - created_at
+    AuthResponse:
+      type: object
+      properties:
+        jwt_token:
+          type: string
+          description: JWTトークン（有効期限24時間）
+        user:
+          $ref: '#/components/schemas/User'
+      required:
+        - jwt_token
+        - user
+    ChatRequest:
+      type: object
+      properties:
+        input_text:
+          type: string
+          minLength: 1
+          maxLength: 10000
+          description: 自然言語テキスト
+      required:
+        - input_text
+    ChatResponse:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - task
+            - unknown
+          description: 解析結果のタイプ
+        task:
+          $ref: '#/components/schemas/Task'
+          nullable: true
+        message:
+          type: string
+          nullable: true
+          description: type=unknownの場合のメッセージ
+        interpretation_id:
+          type: string
+          format: uuid
+          description: AI解釈ID
+      required:
+        - type
+        - interpretation_id
+    AIInterpretation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: AI解釈ID
+        user_id:
+          type: string
+          format: uuid
+          description: ユーザーID
+        input_text:
+          type: string
+          description: 入力テキスト
+        structured_result:
+          type: object
+          description: AI解析結果（JSON）
+          properties:
+            type:
+              type: string
+              enum:
+                - task
+                - event
+                - unknown
+            title:
+              type: string
+            description:
+              type: string
+            due_at:
+              type: string
+              format: date-time
+            starts_at:
+              type: string
+              format: date-time
+            ends_at:
+              type: string
+              format: date-time
+        ai_model:
+          type: string
+          description: 使用AIモデル
+        created_at:
+          type: string
+          format: date-time
+          description: 作成日時
+      required:
+        - id
+        - user_id
+        - input_text
+        - structured_result
+        - ai_model
+        - created_at

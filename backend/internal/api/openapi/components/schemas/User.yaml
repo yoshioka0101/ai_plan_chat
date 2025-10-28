@@ -1,0 +1,21 @@
+type: object
+properties:
+  id:
+    type: string
+    format: uuid
+    description: ユーザーID
+  nickname:
+    type: string
+    description: ニックネーム/表示名
+  avatar:
+    type: string
+    nullable: true
+    description: アバター画像URL
+  created_at:
+    type: string
+    format: date-time
+    description: 作成日時
+required:
+  - id
+  - nickname
+  - created_at

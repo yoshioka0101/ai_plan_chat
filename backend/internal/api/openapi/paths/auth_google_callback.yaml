@@ -1,0 +1,35 @@
+post:
+  summary: GoogleCallback
+  description: Google OAuth 2.0コールバック処理
+  operationId: googleCallback
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - code
+          properties:
+            code:
+              type: string
+              description: Google OAuthから返されたauthorization code
+  responses:
+    '200':
+      description: Success
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/AuthResponse.yaml'
+    '400':
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ErrorResponse.yaml'
+    '500':
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ErrorResponse.yaml'

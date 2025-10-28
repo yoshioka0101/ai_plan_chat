@@ -1,0 +1,9 @@
+type: object
+properties:
+  input_text:
+    type: string
+    minLength: 1
+    maxLength: 10000
+    description: 自然言語テキスト
+required:
+  - input_text

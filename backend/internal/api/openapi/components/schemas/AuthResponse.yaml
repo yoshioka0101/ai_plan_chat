@@ -1,0 +1,10 @@
+type: object
+properties:
+  jwt_token:
+    type: string
+    description: JWTトークン（有効期限24時間）
+  user:
+    $ref: './User.yaml'
+required:
+  - jwt_token
+  - user
