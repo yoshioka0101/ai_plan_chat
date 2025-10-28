@@ -19,6 +19,23 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+const (
+	BearerAuthScopes = "BearerAuth.Scopes"
+)
+
+// Defines values for AIInterpretationStructuredResultType.
+const (
+	AIInterpretationStructuredResultTypeEvent   AIInterpretationStructuredResultType = "event"
+	AIInterpretationStructuredResultTypeTask    AIInterpretationStructuredResultType = "task"
+	AIInterpretationStructuredResultTypeUnknown AIInterpretationStructuredResultType = "unknown"
+)
+
+// Defines values for ChatResponseType.
+const (
+	ChatResponseTypeTask    ChatResponseType = "task"
+	ChatResponseTypeUnknown ChatResponseType = "unknown"
+)
+
 // Defines values for CreateTaskRequestStatus.
 const (
 	CreateTaskRequestStatusDone       CreateTaskRequestStatus = "done"
@@ -46,6 +63,73 @@ const (
 	UpdateTaskRequestStatusInProgress UpdateTaskRequestStatus = "in_progress"
 	UpdateTaskRequestStatusTodo       UpdateTaskRequestStatus = "todo"
 )
+
+// Defines values for ListInterpretationsParamsType.
+const (
+	ListInterpretationsParamsTypeEvent   ListInterpretationsParamsType = "event"
+	ListInterpretationsParamsTypeTask    ListInterpretationsParamsType = "task"
+	ListInterpretationsParamsTypeUnknown ListInterpretationsParamsType = "unknown"
+)
+
+// AIInterpretation defines model for AIInterpretation.
+type AIInterpretation struct {
+	// AiModel 使用AIモデル
+	AiModel string `json:"ai_model"`
+
+	// CreatedAt 作成日時
+	CreatedAt time.Time `json:"created_at"`
+
+	// Id AI解釈ID
+	Id openapi_types.UUID `json:"id"`
+
+	// InputText 入力テキスト
+	InputText string `json:"input_text"`
+
+	// StructuredResult AI解析結果（JSON）
+	StructuredResult struct {
+		Description *string                               `json:"description,omitempty"`
+		DueAt       *time.Time                            `json:"due_at,omitempty"`
+		EndsAt      *time.Time                            `json:"ends_at,omitempty"`
+		StartsAt    *time.Time                            `json:"starts_at,omitempty"`
+		Title       *string                               `json:"title,omitempty"`
+		Type        *AIInterpretationStructuredResultType `json:"type,omitempty"`
+	} `json:"structured_result"`
+
+	// UserId ユーザーID
+	UserId openapi_types.UUID `json:"user_id"`
+}
+
+// AIInterpretationStructuredResultType defines model for AIInterpretation.StructuredResult.Type.
+type AIInterpretationStructuredResultType string
+
+// AuthResponse defines model for AuthResponse.
+type AuthResponse struct {
+	// JwtToken JWTトークン（有効期限24時間）
+	JwtToken string `json:"jwt_token"`
+	User     User   `json:"user"`
+}
+
+// ChatRequest defines model for ChatRequest.
+type ChatRequest struct {
+	// InputText 自然言語テキスト
+	InputText string `json:"input_text"`
+}
+
+// ChatResponse defines model for ChatResponse.
+type ChatResponse struct {
+	// InterpretationId AI解釈ID
+	InterpretationId openapi_types.UUID `json:"interpretation_id"`
+
+	// Message type=unknownの場合のメッセージ
+	Message *string `json:"message"`
+	Task    *Task   `json:"task,omitempty"`
+
+	// Type 解析結果のタイプ
+	Type ChatResponseType `json:"type"`
+}
+
+// ChatResponseType 解析結果のタイプ
+type ChatResponseType string
 
 // CreateTaskRequest defines model for CreateTaskRequest.
 type CreateTaskRequest struct {
@@ -142,6 +226,48 @@ type UpdateTaskRequest struct {
 // UpdateTaskRequestStatus タスクの状態
 type UpdateTaskRequestStatus string
 
+// User defines model for User.
+type User struct {
+	// Avatar アバター画像URL
+	Avatar *string `json:"avatar"`
+
+	// CreatedAt 作成日時
+	CreatedAt time.Time `json:"created_at"`
+
+	// Id ユーザーID
+	Id openapi_types.UUID `json:"id"`
+
+	// Nickname ニックネーム/表示名
+	Nickname string `json:"nickname"`
+}
+
+// GoogleCallbackJSONBody defines parameters for GoogleCallback.
+type GoogleCallbackJSONBody struct {
+	// Code Google OAuthから返されたauthorization code
+	Code string `json:"code"`
+}
+
+// ListInterpretationsParams defines parameters for ListInterpretations.
+type ListInterpretationsParams struct {
+	// Type AI解析のtype絞り込み
+	Type *ListInterpretationsParamsType `form:"type,omitempty" json:"type,omitempty"`
+
+	// Limit 取得件数（デフォルト: 20）
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset オフセット（ページネーション）
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListInterpretationsParamsType defines parameters for ListInterpretations.
+type ListInterpretationsParamsType string
+
+// GoogleCallbackJSONRequestBody defines body for GoogleCallback for application/json ContentType.
+type GoogleCallbackJSONRequestBody GoogleCallbackJSONBody
+
+// InterpretAndCreateJSONRequestBody defines body for InterpretAndCreate for application/json ContentType.
+type InterpretAndCreateJSONRequestBody = ChatRequest
+
 // CreateTaskJSONRequestBody defines body for CreateTask for application/json ContentType.
 type CreateTaskJSONRequestBody = CreateTaskRequest
 
@@ -224,8 +350,24 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
+	// GoogleCallbackWithBody request with any body
+	GoogleCallbackWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	GoogleCallback(ctx context.Context, body GoogleCallbackJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// InterpretAndCreateWithBody request with any body
+	InterpretAndCreateWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	InterpretAndCreate(ctx context.Context, body InterpretAndCreateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetHealth request
 	GetHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListInterpretations request
+	ListInterpretations(ctx context.Context, params *ListInterpretationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetInterpretation request
+	GetInterpretation(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetTaskList request
 	GetTaskList(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -252,8 +394,80 @@ type ClientInterface interface {
 	UpdateTask(ctx context.Context, id openapi_types.UUID, body UpdateTaskJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
+func (c *Client) GoogleCallbackWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGoogleCallbackRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GoogleCallback(ctx context.Context, body GoogleCallbackJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGoogleCallbackRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) InterpretAndCreateWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewInterpretAndCreateRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) InterpretAndCreate(ctx context.Context, body InterpretAndCreateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewInterpretAndCreateRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetHealthRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListInterpretations(ctx context.Context, params *ListInterpretationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListInterpretationsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetInterpretation(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetInterpretationRequest(c.Server, id)
 	if err != nil {
 		return nil, err
 	}
@@ -372,6 +586,86 @@ func (c *Client) UpdateTask(ctx context.Context, id openapi_types.UUID, body Upd
 	return c.Client.Do(req)
 }
 
+// NewGoogleCallbackRequest calls the generic GoogleCallback builder with application/json body
+func NewGoogleCallbackRequest(server string, body GoogleCallbackJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewGoogleCallbackRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewGoogleCallbackRequestWithBody generates requests for GoogleCallback with any type of body
+func NewGoogleCallbackRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/auth/google/callback")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewInterpretAndCreateRequest calls the generic InterpretAndCreate builder with application/json body
+func NewInterpretAndCreateRequest(server string, body InterpretAndCreateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewInterpretAndCreateRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewInterpretAndCreateRequestWithBody generates requests for InterpretAndCreate with any type of body
+func NewInterpretAndCreateRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/chat")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewGetHealthRequest generates requests for GetHealth
 func NewGetHealthRequest(server string) (*http.Request, error) {
 	var err error
@@ -382,6 +676,121 @@ func NewGetHealthRequest(server string) (*http.Request, error) {
 	}
 
 	operationPath := fmt.Sprintf("/health")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListInterpretationsRequest generates requests for ListInterpretations
+func NewListInterpretationsRequest(server string, params *ListInterpretationsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/interpretations")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Type != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "type", runtime.ParamLocationQuery, *params.Type); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetInterpretationRequest generates requests for GetInterpretation
+func NewGetInterpretationRequest(server string, id openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/interpretations/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -671,8 +1080,24 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
+	// GoogleCallbackWithBodyWithResponse request with any body
+	GoogleCallbackWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GoogleCallbackResponse, error)
+
+	GoogleCallbackWithResponse(ctx context.Context, body GoogleCallbackJSONRequestBody, reqEditors ...RequestEditorFn) (*GoogleCallbackResponse, error)
+
+	// InterpretAndCreateWithBodyWithResponse request with any body
+	InterpretAndCreateWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InterpretAndCreateResponse, error)
+
+	InterpretAndCreateWithResponse(ctx context.Context, body InterpretAndCreateJSONRequestBody, reqEditors ...RequestEditorFn) (*InterpretAndCreateResponse, error)
+
 	// GetHealthWithResponse request
 	GetHealthWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetHealthResponse, error)
+
+	// ListInterpretationsWithResponse request
+	ListInterpretationsWithResponse(ctx context.Context, params *ListInterpretationsParams, reqEditors ...RequestEditorFn) (*ListInterpretationsResponse, error)
+
+	// GetInterpretationWithResponse request
+	GetInterpretationWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetInterpretationResponse, error)
 
 	// GetTaskListWithResponse request
 	GetTaskListWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetTaskListResponse, error)
@@ -699,6 +1124,56 @@ type ClientWithResponsesInterface interface {
 	UpdateTaskWithResponse(ctx context.Context, id openapi_types.UUID, body UpdateTaskJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateTaskResponse, error)
 }
 
+type GoogleCallbackResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthResponse
+	JSON400      *ErrorResponse
+	JSON500      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GoogleCallbackResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GoogleCallbackResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type InterpretAndCreateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ChatResponse
+	JSON400      *ErrorResponse
+	JSON401      *ErrorResponse
+	JSON422      *ErrorResponse
+	JSON500      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r InterpretAndCreateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r InterpretAndCreateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetHealthResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -715,6 +1190,60 @@ func (r GetHealthResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetHealthResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListInterpretationsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Interpretations []AIInterpretation `json:"interpretations"`
+		Limit           *int               `json:"limit,omitempty"`
+		Offset          *int               `json:"offset,omitempty"`
+		Total           int                `json:"total"`
+	}
+	JSON401 *ErrorResponse
+	JSON500 *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ListInterpretationsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListInterpretationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetInterpretationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AIInterpretation
+	JSON401      *ErrorResponse
+	JSON404      *ErrorResponse
+	JSON500      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetInterpretationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetInterpretationResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -862,6 +1391,40 @@ func (r UpdateTaskResponse) StatusCode() int {
 	return 0
 }
 
+// GoogleCallbackWithBodyWithResponse request with arbitrary body returning *GoogleCallbackResponse
+func (c *ClientWithResponses) GoogleCallbackWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GoogleCallbackResponse, error) {
+	rsp, err := c.GoogleCallbackWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGoogleCallbackResponse(rsp)
+}
+
+func (c *ClientWithResponses) GoogleCallbackWithResponse(ctx context.Context, body GoogleCallbackJSONRequestBody, reqEditors ...RequestEditorFn) (*GoogleCallbackResponse, error) {
+	rsp, err := c.GoogleCallback(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGoogleCallbackResponse(rsp)
+}
+
+// InterpretAndCreateWithBodyWithResponse request with arbitrary body returning *InterpretAndCreateResponse
+func (c *ClientWithResponses) InterpretAndCreateWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InterpretAndCreateResponse, error) {
+	rsp, err := c.InterpretAndCreateWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseInterpretAndCreateResponse(rsp)
+}
+
+func (c *ClientWithResponses) InterpretAndCreateWithResponse(ctx context.Context, body InterpretAndCreateJSONRequestBody, reqEditors ...RequestEditorFn) (*InterpretAndCreateResponse, error) {
+	rsp, err := c.InterpretAndCreate(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseInterpretAndCreateResponse(rsp)
+}
+
 // GetHealthWithResponse request returning *GetHealthResponse
 func (c *ClientWithResponses) GetHealthWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetHealthResponse, error) {
 	rsp, err := c.GetHealth(ctx, reqEditors...)
@@ -869,6 +1432,24 @@ func (c *ClientWithResponses) GetHealthWithResponse(ctx context.Context, reqEdit
 		return nil, err
 	}
 	return ParseGetHealthResponse(rsp)
+}
+
+// ListInterpretationsWithResponse request returning *ListInterpretationsResponse
+func (c *ClientWithResponses) ListInterpretationsWithResponse(ctx context.Context, params *ListInterpretationsParams, reqEditors ...RequestEditorFn) (*ListInterpretationsResponse, error) {
+	rsp, err := c.ListInterpretations(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListInterpretationsResponse(rsp)
+}
+
+// GetInterpretationWithResponse request returning *GetInterpretationResponse
+func (c *ClientWithResponses) GetInterpretationWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetInterpretationResponse, error) {
+	rsp, err := c.GetInterpretation(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetInterpretationResponse(rsp)
 }
 
 // GetTaskListWithResponse request returning *GetTaskListResponse
@@ -949,6 +1530,100 @@ func (c *ClientWithResponses) UpdateTaskWithResponse(ctx context.Context, id ope
 	return ParseUpdateTaskResponse(rsp)
 }
 
+// ParseGoogleCallbackResponse parses an HTTP response from a GoogleCallbackWithResponse call
+func ParseGoogleCallbackResponse(rsp *http.Response) (*GoogleCallbackResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GoogleCallbackResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseInterpretAndCreateResponse parses an HTTP response from a InterpretAndCreateWithResponse call
+func ParseInterpretAndCreateResponse(rsp *http.Response) (*InterpretAndCreateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &InterpretAndCreateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ChatResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetHealthResponse parses an HTTP response from a GetHealthWithResponse call
 func ParseGetHealthResponse(rsp *http.Response) (*GetHealthResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -969,6 +1644,98 @@ func ParseGetHealthResponse(rsp *http.Response) (*GetHealthResponse, error) {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListInterpretationsResponse parses an HTTP response from a ListInterpretationsWithResponse call
+func ParseListInterpretationsResponse(rsp *http.Response) (*ListInterpretationsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListInterpretationsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Interpretations []AIInterpretation `json:"interpretations"`
+			Limit           *int               `json:"limit,omitempty"`
+			Offset          *int               `json:"offset,omitempty"`
+			Total           int                `json:"total"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetInterpretationResponse parses an HTTP response from a GetInterpretationWithResponse call
+func ParseGetInterpretationResponse(rsp *http.Response) (*GetInterpretationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetInterpretationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AIInterpretation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
 
 	}
 
@@ -1196,9 +1963,21 @@ func ParseUpdateTaskResponse(rsp *http.Response) (*UpdateTaskResponse, error) {
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// GoogleCallback
+	// (POST /auth/google/callback)
+	GoogleCallback(c *gin.Context)
+	// InterpretAndCreate
+	// (POST /chat)
+	InterpretAndCreate(c *gin.Context)
 	// GetHealth
 	// (GET /health)
 	GetHealth(c *gin.Context)
+	// ListInterpretations
+	// (GET /interpretations)
+	ListInterpretations(c *gin.Context, params ListInterpretationsParams)
+	// GetInterpretation
+	// (GET /interpretations/{id})
+	GetInterpretation(c *gin.Context, id openapi_types.UUID)
 	// GetTaskList
 	// (GET /tasks)
 	GetTaskList(c *gin.Context)
@@ -1228,6 +2007,34 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(c *gin.Context)
 
+// GoogleCallback operation middleware
+func (siw *ServerInterfaceWrapper) GoogleCallback(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GoogleCallback(c)
+}
+
+// InterpretAndCreate operation middleware
+func (siw *ServerInterfaceWrapper) InterpretAndCreate(c *gin.Context) {
+
+	c.Set(BearerAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.InterpretAndCreate(c)
+}
+
 // GetHealth operation middleware
 func (siw *ServerInterfaceWrapper) GetHealth(c *gin.Context) {
 
@@ -1239,6 +2046,76 @@ func (siw *ServerInterfaceWrapper) GetHealth(c *gin.Context) {
 	}
 
 	siw.Handler.GetHealth(c)
+}
+
+// ListInterpretations operation middleware
+func (siw *ServerInterfaceWrapper) ListInterpretations(c *gin.Context) {
+
+	var err error
+
+	c.Set(BearerAuthScopes, []string{})
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListInterpretationsParams
+
+	// ------------- Optional query parameter "type" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "type", c.Request.URL.Query(), &params.Type)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter type: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", c.Request.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", c.Request.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListInterpretations(c, params)
+}
+
+// GetInterpretation operation middleware
+func (siw *ServerInterfaceWrapper) GetInterpretation(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetInterpretation(c, id)
 }
 
 // GetTaskList operation middleware
@@ -1390,7 +2267,11 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
+	router.POST(options.BaseURL+"/auth/google/callback", wrapper.GoogleCallback)
+	router.POST(options.BaseURL+"/chat", wrapper.InterpretAndCreate)
 	router.GET(options.BaseURL+"/health", wrapper.GetHealth)
+	router.GET(options.BaseURL+"/interpretations", wrapper.ListInterpretations)
+	router.GET(options.BaseURL+"/interpretations/:id", wrapper.GetInterpretation)
 	router.GET(options.BaseURL+"/tasks", wrapper.GetTaskList)
 	router.POST(options.BaseURL+"/tasks", wrapper.CreateTask)
 	router.DELETE(options.BaseURL+"/tasks/:id", wrapper.DeleteTask)

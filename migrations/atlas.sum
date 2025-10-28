@@ -1,4 +1,5 @@
-h1:YTL3tbHyWHeuZDJ+w36ysH3385Ob6bzTHcP5ZVe5gEg=
+h1:WmsDYFIYWMuoNZQxRFlDFaFVgDwRjkj9rLyPbmMgFuQ=
 001_init.sql h1:cCFkSWaI/Pw0u50UW1rA9klU+UCnVA4B+xqOHjcz5Ik=
 20251019004030_create_tasks_table.sql h1:dY1QNDFs4Bx4hZdQiaQoY4D7vXK5zSSkqMUgspmMosU=
 20251023000000_update_task_status_values.sql h1:RSQCNyGK3wEG6FLe2nBQCKDSgtjYmX4R/YmvPiM/F8o=
+20251028234704_ai_chat_interpretation.sql h1:DmIHRdE+hnamB+ccj/Rq7w/wy2l012TCqoTBKdRDNXk=

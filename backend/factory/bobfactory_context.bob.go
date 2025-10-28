@@ -7,8 +7,27 @@ import "context"
 
 type contextKey string
 
-// Relationship Contexts for tasks
-var taskWithParentsCascadingCtx = newContextual[bool]("taskWithParentsCascading")
+var (
+	// Relationship Contexts for ai_interpretations
+	aiInterpretationWithParentsCascadingCtx = newContextual[bool]("aiInterpretationWithParentsCascading")
+	aiInterpretationRelUserCtx              = newContextual[bool]("ai_interpretations.users.fk_ai_interpretations_user")
+	aiInterpretationRelTasksCtx             = newContextual[bool]("ai_interpretations.tasks.fk_tasks_ai_interpretation")
+
+	// Relationship Contexts for tasks
+	taskWithParentsCascadingCtx = newContextual[bool]("taskWithParentsCascading")
+	taskRelAiInterpretationCtx  = newContextual[bool]("ai_interpretations.tasks.fk_tasks_ai_interpretation")
+	taskRelUserCtx              = newContextual[bool]("tasks.users.fk_tasks_user")
+
+	// Relationship Contexts for user_auths
+	userAuthWithParentsCascadingCtx = newContextual[bool]("userAuthWithParentsCascading")
+	userAuthRelUserCtx              = newContextual[bool]("user_auths.users.fk_user_auths_user")
+
+	// Relationship Contexts for users
+	userWithParentsCascadingCtx = newContextual[bool]("userWithParentsCascading")
+	userRelAiInterpretationsCtx = newContextual[bool]("ai_interpretations.users.fk_ai_interpretations_user")
+	userRelTasksCtx             = newContextual[bool]("tasks.users.fk_tasks_user")
+	userRelUserAuthsCtx         = newContextual[bool]("user_auths.users.fk_user_auths_user")
+)
 
 // Contextual is a convienience wrapper around context.WithValue and context.Value
 type contextual[V any] struct {
