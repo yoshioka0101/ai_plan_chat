@@ -42,6 +42,8 @@ func SetupRoutes(server *Server) *gin.Engine {
 	r.GET("/health", server.HealthHandler.GetHealth)
 
 	// Auth endpoints
+	r.GET("/auth/google", server.AuthHandler.GoogleAuth)
+	r.GET("/auth/google/callback", server.AuthHandler.GoogleCallback)
 	r.POST("/auth/google/callback", server.AuthHandler.GoogleCallback)
 
 	// API v1 routes

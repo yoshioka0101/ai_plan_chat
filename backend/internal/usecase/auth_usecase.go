@@ -37,8 +37,21 @@ func (u *authUsecase) SignUpWithGoogle(ctx context.Context, googleID, email, nic
 	}
 
 	if existingUser != nil {
-		// 既存ユーザーの場合はSignInとして扱う
-		return u.SignInWithGoogle(ctx, googleID, email, nickname, avatar)
+		// 既存ユーザーが見つかった場合は、そのまま返す（新規作成ではないため）
+		// 必要に応じて情報を更新
+		now := time.Now()
+		existingUser.Email = email
+		existingUser.Nickname = nickname
+		if avatar != "" {
+			existingUser.Avatar.Set(avatar)
+		}
+		existingUser.UpdatedAt = now
+
+		err = u.userRepo.UpdateUser(ctx, existingUser)
+		if err != nil {
+			return nil, err
+		}
+		return existingUser, nil
 	}
 
 	// 新規ユーザーを作成
@@ -64,6 +77,7 @@ func (u *authUsecase) SignUpWithGoogle(ctx context.Context, googleID, email, nic
 }
 
 // SignInWithGoogle はGoogle認証で既存ユーザーを認証または更新します
+// ユーザーが存在しない場合は新規作成します
 func (u *authUsecase) SignInWithGoogle(ctx context.Context, googleID, email, nickname, avatar string) (*models.User, error) {
 	// 既存ユーザーを検索
 	existingUser, err := u.userRepo.GetUserByGoogleID(ctx, googleID)
@@ -89,8 +103,25 @@ func (u *authUsecase) SignInWithGoogle(ctx context.Context, googleID, email, nic
 		return existingUser, nil
 	}
 
-	// ユーザーが見つからない場合は新規作成
-	return u.SignUpWithGoogle(ctx, googleID, email, nickname, avatar)
+	// ユーザーが見つからない場合は新規作成（相互依存を避けるため直接実装）
+	newUser := &models.User{
+		ID:        uuid.New().String(),
+		GoogleID:  googleID,
+		Email:     email,
+		Nickname:  nickname,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+	if avatar != "" {
+		newUser.Avatar.Set(avatar)
+	}
+
+	err = u.userRepo.CreateUser(ctx, newUser)
+	if err != nil {
+		return nil, err
+	}
+
+	return newUser, nil
 }
 
 // GetUserByID はIDでユーザーを取得します

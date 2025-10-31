@@ -1,0 +1,14 @@
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: #f3f4f6;
+}
+
+.loading-text {
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+

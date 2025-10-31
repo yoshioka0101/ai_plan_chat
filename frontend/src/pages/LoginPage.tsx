@@ -1,11 +1,44 @@
+import { useState } from 'react';
 import './LoginPage.css';
 
-const GOOGLE_AUTH_URL = import.meta.env.VITE_GOOGLE_AUTH_URL || 'http://localhost:8080/auth/google/callback';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
+const BACKEND_URL = API_BASE_URL.replace('/api/v1', '');
 
 export function LoginPage() {
-  const handleGoogleLogin = () => {
-    // Redirect to Google OAuth
-    window.location.href = GOOGLE_AUTH_URL;
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string>('');
+
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    setError('');
+
+    try {
+      // バックエンドからGoogle認証URLを取得
+      const response = await fetch(`${BACKEND_URL}/auth/google`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to initialize Google authentication');
+      }
+
+      const data = await response.json();
+      const authURL = data.auth_url;
+
+      if (!authURL) {
+        throw new Error('Invalid response from server');
+      }
+
+      // Google認証ページにリダイレクト
+      window.location.href = authURL;
+    } catch (err) {
+      console.error('Google login error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to start authentication');
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -17,9 +50,23 @@ export function LoginPage() {
             Sign in with your Google account
           </p>
 
+          {error && (
+            <div style={{
+              color: '#dc2626',
+              marginBottom: '1rem',
+              padding: '0.75rem',
+              backgroundColor: '#fee2e2',
+              borderRadius: '6px',
+              fontSize: '0.875rem'
+            }}>
+              {error}
+            </div>
+          )}
+
           <button
             onClick={handleGoogleLogin}
             className="google-button"
+            disabled={isLoading}
           >
             <svg className="google-icon" viewBox="0 0 24 24">
               <path

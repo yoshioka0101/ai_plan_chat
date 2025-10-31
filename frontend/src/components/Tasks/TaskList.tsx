@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { taskService } from '../../services/taskService';
+import { useAuth } from '../../hooks/useAuth';
 import { KanbanColumn } from './KanbanColumn';
 import { ListView } from './ListView';
 import { CalendarView } from './CalendarView';
@@ -19,12 +20,9 @@ export const TaskList = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>('kanban');
 
-  // Load tasks on component mount
-  useEffect(() => {
-    loadTasks();
-  }, []);
+  const { token, isAuthenticated } = useAuth();
 
-  const loadTasks = async () => {
+  const loadTasks = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -36,7 +34,14 @@ export const TaskList = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Load tasks on component mount and when authentication state changes
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      loadTasks();
+    }
+  }, [isAuthenticated, token, loadTasks]);
 
   const handleCreateTask = async (taskData: CreateTaskRequest) => {
     try {

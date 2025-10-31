@@ -1,9 +1,11 @@
 export interface User {
   id: string;
   email: string;
-  name: string;
-  created_at: string;
-  updated_at: string;
+  nickname?: string; // バックエンドから送られるnickname
+  name?: string; // 後方互換性のため残す
+  avatar?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface AuthResponse {

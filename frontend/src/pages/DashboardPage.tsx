@@ -13,7 +13,7 @@ export function DashboardPage() {
         <div className="header-content">
           <h1 className="dashboard-title">AI Plan Chat</h1>
           <div className="user-menu">
-            <span className="user-name">{user?.name}</span>
+            <span className="user-name">{user?.nickname || user?.email || 'User'}</span>
             <button onClick={logout} className="logout-button">
               Logout
             </button>

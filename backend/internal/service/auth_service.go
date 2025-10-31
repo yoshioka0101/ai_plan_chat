@@ -180,9 +180,8 @@ func (s *authService) GetAuthURL(state, codeChallenge string) string {
 	)
 }
 
-// generateCodeChallenge はcode_verifierからcode_challengeを生成します
-// nolint:unused // 将来のPKCE実装のために保持
-func generateCodeChallenge(verifier string) string {
+// GenerateCodeChallenge はcode_verifierからcode_challengeを生成します
+func GenerateCodeChallenge(verifier string) string {
 	hash := sha256.Sum256([]byte(verifier))
 	return base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(hash[:])
 }

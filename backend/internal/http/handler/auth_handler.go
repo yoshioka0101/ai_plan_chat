@@ -1,9 +1,12 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 
 	"github.com/gin-gonic/gin"
 	"github.com/yoshioka0101/ai_plan_chat/internal/http/presenter"
@@ -29,21 +32,52 @@ func NewAuthHandler(authUsecase usecase.AuthUsecase, authService service.AuthSer
 	}
 }
 
-// GoogleCallbackRequest はGoogleOAuthコールバックのリクエスト
-type GoogleCallbackRequest struct {
-	Code  string `json:"code" binding:"required"`  // Authorization Code
-	State string `json:"state" binding:"required"` // CSRF対策用state
+// GoogleAuth はGoogleOAuth認証URLを生成します
+func (h *AuthHandler) GoogleAuth(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	// OAuth stateとPKCE verifierを生成
+	oauthState, err := h.authService.GenerateOAuthState()
+	if err != nil {
+		h.logger.ErrorContext(ctx, "Failed to generate OAuth state", slog.String("error", err.Error()))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initialize authentication"})
+		return
+	}
+
+	// code_challengeを生成
+	codeChallenge := service.GenerateCodeChallenge(oauthState.CodeVerifier)
+
+	// Google認証URLを生成
+	authURL := h.authService.GetAuthURL(oauthState.State, codeChallenge)
+
+	h.logger.InfoContext(ctx, "Google auth URL generated", slog.String("state", oauthState.State))
+	c.JSON(http.StatusOK, gin.H{"auth_url": authURL})
+}
+
+// googleCallbackRequest はGoogleOAuthコールバックのリクエスト（このパッケージ内でのみ使用）
+type googleCallbackRequest struct {
+	Code  string `form:"code" json:"code" binding:"required"`  // Authorization Code
+	State string `form:"state" json:"state" binding:"required"` // CSRF対策用state
 }
 
 // GoogleCallback はGoogleOAuthコールバックを処理します
 func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 	ctx := c.Request.Context()
-	var req GoogleCallbackRequest
+	var req googleCallbackRequest
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		h.logger.WarnContext(ctx, "Invalid request body", slog.String("error", err.Error()))
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-		return
+	// GETリクエストの場合はクエリパラメータから、POSTの場合はJSONから取得
+	if c.Request.Method == http.MethodGet {
+		if err := c.ShouldBindQuery(&req); err != nil {
+			h.logger.WarnContext(ctx, "Invalid query parameters", slog.String("error", err.Error()))
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid query parameters"})
+			return
+		}
+	} else {
+		if err := c.ShouldBindJSON(&req); err != nil {
+			h.logger.WarnContext(ctx, "Invalid request body", slog.String("error", err.Error()))
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
 	}
 
 	// Step 1: State検証
@@ -67,7 +101,8 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 		h.logger.ErrorContext(ctx, "Failed to exchange code for token",
 			slog.String("error", err.Error()),
 		)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to exchange code for token"})
+		// Authorization codeの交換エラーは内部エラー（Google APIとの通信エラーなど）
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to exchange code for token"})
 		return
 	}
 
@@ -91,7 +126,7 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 	)
 	if err != nil {
 		h.logger.ErrorContext(ctx, "Failed to authenticate user",
-			slog.String("google_id", userInfo.Id),
+			slog.String("email", userInfo.Email),
 			slog.String("error", err.Error()),
 		)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to authenticate user"})
@@ -109,12 +144,37 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 		return
 	}
 
-	// Step 6: 成功レスポンスを返す
+	// Step 6: フロントエンドにリダイレクト（認証成功）
 	h.logger.InfoContext(ctx, "User authenticated successfully",
 		slog.String("user_id", user.ID),
 		slog.String("email", user.Email),
 	)
 
-	response := h.presenter.GoogleCallback(user, jwtToken)
-	c.JSON(http.StatusOK, response)
+	// ユーザー情報をJSON形式に変換
+	userData := map[string]interface{}{
+		"id":       user.ID,
+		"email":    user.Email,
+		"nickname": user.Nickname,
+	}
+	if avatar, ok := user.Avatar.Get(); ok {
+		userData["avatar"] = avatar
+	}
+	userJSONBytes, err := json.Marshal(userData)
+	if err != nil {
+		h.logger.ErrorContext(ctx, "Failed to marshal user data", slog.String("error", err.Error()))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process user data"})
+		return
+	}
+	userJSON := url.QueryEscape(string(userJSONBytes))
+
+	// フロントエンドのコールバックページにリダイレクト
+	// tokenとuserをクエリパラメータとして渡す
+	frontendURL := "http://localhost:5173/auth/callback"
+	redirectURL := fmt.Sprintf("%s?token=%s&user=%s",
+		frontendURL,
+		url.QueryEscape(jwtToken),
+		userJSON,
+	)
+
+	c.Redirect(http.StatusFound, redirectURL)
 }

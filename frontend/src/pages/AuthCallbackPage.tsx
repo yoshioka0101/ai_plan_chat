@@ -13,9 +13,16 @@ export function AuthCallbackPage() {
     const token = searchParams.get('token');
     const userParam = searchParams.get('user');
 
+    console.log('AuthCallback - token:', token ? 'exists' : 'missing');
+    console.log('AuthCallback - userParam:', userParam ? 'exists' : 'missing');
+    console.log('AuthCallback - full URL:', window.location.href);
+
     if (token && userParam) {
       try {
-        const user = JSON.parse(decodeURIComponent(userParam));
+        const decodedUser = decodeURIComponent(userParam);
+        console.log('AuthCallback - decoded user:', decodedUser);
+        const user = JSON.parse(decodedUser);
+        console.log('AuthCallback - parsed user:', user);
         setAuth(user, token);
         navigate('/dashboard', { replace: true });
       } catch (err) {
@@ -23,6 +30,7 @@ export function AuthCallbackPage() {
         setError('Authentication failed. Invalid user data.');
       }
     } else {
+      console.error('AuthCallback - Missing params:', { token: !!token, userParam: !!userParam });
       setError('Authentication failed. Missing token or user data.');
     }
   }, [searchParams, setAuth, navigate]);
@@ -69,12 +77,26 @@ export function AuthCallbackPage() {
   return (
     <div style={{
       display: 'flex',
+      flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
       minHeight: '100vh',
-      backgroundColor: '#f3f4f6'
+      backgroundColor: '#f3f4f6',
+      gap: '1rem'
     }}>
-      <div>Processing authentication...</div>
+      <div style={{
+        fontSize: '1.125rem',
+        color: '#4b5563',
+        fontWeight: 500
+      }}>
+        Processing authentication...
+      </div>
+      <div style={{
+        fontSize: '0.875rem',
+        color: '#6b7280'
+      }}>
+        Please wait while we complete your sign-in
+      </div>
     </div>
   );
 }
