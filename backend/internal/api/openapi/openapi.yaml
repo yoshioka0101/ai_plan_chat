@@ -13,7 +13,20 @@ paths:
     $ref: './paths/tasks.yaml'
   /tasks/{id}:
     $ref: './paths/tasks_id.yaml'
+  /auth/google/callback:
+    $ref: './paths/auth_google_callback.yaml'
+  /chat:
+    $ref: './paths/chat.yaml'
+  /interpretations:
+    $ref: './paths/interpretations.yaml'
+  /interpretations/{id}:
+    $ref: './paths/interpretations_id.yaml'
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     HealthResponse:
       $ref: './components/schemas/HealthResponse.yaml'
@@ -27,3 +40,17 @@ components:
       $ref: './components/schemas/EditTaskRequest.yaml'
     ErrorResponse:
       $ref: './components/schemas/ErrorResponse.yaml'
+    User:
+      $ref: './components/schemas/User.yaml'
+    LoginRequest:
+      $ref: './components/schemas/LoginRequest.yaml'
+    SignupRequest:
+      $ref: './components/schemas/SignupRequest.yaml'
+    AuthResponse:
+      $ref: './components/schemas/AuthResponse.yaml'
+    ChatRequest:
+      $ref: './components/schemas/ChatRequest.yaml'
+    ChatResponse:
+      $ref: './components/schemas/ChatResponse.yaml'
+    AIInterpretation:
+      $ref: './components/schemas/AIInterpretation.yaml'

@@ -13,7 +13,7 @@ import (
 	"github.com/aarondl/opt/omitnull"
 	"github.com/jaswdr/faker/v2"
 	"github.com/stephenafamo/bob"
-	models "github.com/yoshioka0101/ai_plan_chat/gen/models"
+	models "github.com/yoshioka0101/ai_plan_chat/models"
 )
 
 type TaskMod interface {
@@ -37,17 +37,33 @@ func (mods TaskModSlice) Apply(ctx context.Context, n *TaskTemplate) {
 // TaskTemplate is an object representing the database table.
 // all columns are optional and should be set by mods
 type TaskTemplate struct {
-	ID          func() string
-	Title       func() string
-	Description func() null.Val[string]
-	DueAt       func() null.Val[time.Time]
-	Status      func() string
-	CreatedAt   func() time.Time
-	UpdatedAt   func() time.Time
+	ID                 func() string
+	UserID             func() string
+	Title              func() string
+	Description        func() null.Val[string]
+	DueAt              func() null.Val[time.Time]
+	Status             func() string
+	Source             func() string
+	AiInterpretationID func() null.Val[string]
+	CreatedAt          func() time.Time
+	UpdatedAt          func() time.Time
 
+	r taskR
 	f *Factory
 
 	alreadyPersisted bool
+}
+
+type taskR struct {
+	AiInterpretation *taskRAiInterpretationR
+	User             *taskRUserR
+}
+
+type taskRAiInterpretationR struct {
+	o *AiInterpretationTemplate
+}
+type taskRUserR struct {
+	o *UserTemplate
 }
 
 // Apply mods to the TaskTemplate
@@ -59,7 +75,21 @@ func (o *TaskTemplate) Apply(ctx context.Context, mods ...TaskMod) {
 
 // setModelRels creates and sets the relationships on *models.Task
 // according to the relationships in the template. Nothing is inserted into the db
-func (t TaskTemplate) setModelRels(o *models.Task) {}
+func (t TaskTemplate) setModelRels(o *models.Task) {
+	if t.r.AiInterpretation != nil {
+		rel := t.r.AiInterpretation.o.Build()
+		rel.R.Tasks = append(rel.R.Tasks, o)
+		o.AiInterpretationID = null.From(rel.ID) // h2
+		o.R.AiInterpretation = rel
+	}
+
+	if t.r.User != nil {
+		rel := t.r.User.o.Build()
+		rel.R.Tasks = append(rel.R.Tasks, o)
+		o.UserID = rel.ID // h2
+		o.R.User = rel
+	}
+}
 
 // BuildSetter returns an *models.TaskSetter
 // this does nothing with the relationship templates
@@ -69,6 +99,10 @@ func (o TaskTemplate) BuildSetter() *models.TaskSetter {
 	if o.ID != nil {
 		val := o.ID()
 		m.ID = omit.From(val)
+	}
+	if o.UserID != nil {
+		val := o.UserID()
+		m.UserID = omit.From(val)
 	}
 	if o.Title != nil {
 		val := o.Title()
@@ -85,6 +119,14 @@ func (o TaskTemplate) BuildSetter() *models.TaskSetter {
 	if o.Status != nil {
 		val := o.Status()
 		m.Status = omit.From(val)
+	}
+	if o.Source != nil {
+		val := o.Source()
+		m.Source = omit.From(val)
+	}
+	if o.AiInterpretationID != nil {
+		val := o.AiInterpretationID()
+		m.AiInterpretationID = omitnull.FromNull(val)
 	}
 	if o.CreatedAt != nil {
 		val := o.CreatedAt()
@@ -119,6 +161,9 @@ func (o TaskTemplate) Build() *models.Task {
 	if o.ID != nil {
 		m.ID = o.ID()
 	}
+	if o.UserID != nil {
+		m.UserID = o.UserID()
+	}
 	if o.Title != nil {
 		m.Title = o.Title()
 	}
@@ -130,6 +175,12 @@ func (o TaskTemplate) Build() *models.Task {
 	}
 	if o.Status != nil {
 		m.Status = o.Status()
+	}
+	if o.Source != nil {
+		m.Source = o.Source()
+	}
+	if o.AiInterpretationID != nil {
+		m.AiInterpretationID = o.AiInterpretationID()
 	}
 	if o.CreatedAt != nil {
 		m.CreatedAt = o.CreatedAt()
@@ -161,6 +212,10 @@ func ensureCreatableTask(m *models.TaskSetter) {
 		val := random_string(nil, "36")
 		m.ID = omit.From(val)
 	}
+	if !(m.UserID.IsValue()) {
+		val := random_string(nil, "36")
+		m.UserID = omit.From(val)
+	}
 	if !(m.Title.IsValue()) {
 		val := random_string(nil, "500")
 		m.Title = omit.From(val)
@@ -173,6 +228,25 @@ func ensureCreatableTask(m *models.TaskSetter) {
 func (o *TaskTemplate) insertOptRels(ctx context.Context, exec bob.Executor, m *models.Task) error {
 	var err error
 
+	isAiInterpretationDone, _ := taskRelAiInterpretationCtx.Value(ctx)
+	if !isAiInterpretationDone && o.r.AiInterpretation != nil {
+		ctx = taskRelAiInterpretationCtx.WithValue(ctx, true)
+		if o.r.AiInterpretation.o.alreadyPersisted {
+			m.R.AiInterpretation = o.r.AiInterpretation.o.Build()
+		} else {
+			var rel0 *models.AiInterpretation
+			rel0, err = o.r.AiInterpretation.o.Create(ctx, exec)
+			if err != nil {
+				return err
+			}
+			err = m.AttachAiInterpretation(ctx, exec, rel0)
+			if err != nil {
+				return err
+			}
+		}
+
+	}
+
 	return err
 }
 
@@ -183,10 +257,29 @@ func (o *TaskTemplate) Create(ctx context.Context, exec bob.Executor) (*models.T
 	opt := o.BuildSetter()
 	ensureCreatableTask(opt)
 
+	if o.r.User == nil {
+		TaskMods.WithNewUser().Apply(ctx, o)
+	}
+
+	var rel1 *models.User
+
+	if o.r.User.o.alreadyPersisted {
+		rel1 = o.r.User.o.Build()
+	} else {
+		rel1, err = o.r.User.o.Create(ctx, exec)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	opt.UserID = omit.From(rel1.ID)
+
 	m, err := models.Tasks.Insert(opt).One(ctx, exec)
 	if err != nil {
 		return nil, err
 	}
+
+	m.R.User = rel1
 
 	if err := o.insertOptRels(ctx, exec, m); err != nil {
 		return nil, err
@@ -266,10 +359,13 @@ type taskMods struct{}
 func (m taskMods) RandomizeAllColumns(f *faker.Faker) TaskMod {
 	return TaskModSlice{
 		TaskMods.RandomID(f),
+		TaskMods.RandomUserID(f),
 		TaskMods.RandomTitle(f),
 		TaskMods.RandomDescription(f),
 		TaskMods.RandomDueAt(f),
 		TaskMods.RandomStatus(f),
+		TaskMods.RandomSource(f),
+		TaskMods.RandomAiInterpretationID(f),
 		TaskMods.RandomCreatedAt(f),
 		TaskMods.RandomUpdatedAt(f),
 	}
@@ -301,6 +397,37 @@ func (m taskMods) UnsetID() TaskMod {
 func (m taskMods) RandomID(f *faker.Faker) TaskMod {
 	return TaskModFunc(func(_ context.Context, o *TaskTemplate) {
 		o.ID = func() string {
+			return random_string(f, "36")
+		}
+	})
+}
+
+// Set the model columns to this value
+func (m taskMods) UserID(val string) TaskMod {
+	return TaskModFunc(func(_ context.Context, o *TaskTemplate) {
+		o.UserID = func() string { return val }
+	})
+}
+
+// Set the Column from the function
+func (m taskMods) UserIDFunc(f func() string) TaskMod {
+	return TaskModFunc(func(_ context.Context, o *TaskTemplate) {
+		o.UserID = f
+	})
+}
+
+// Clear any values for the column
+func (m taskMods) UnsetUserID() TaskMod {
+	return TaskModFunc(func(_ context.Context, o *TaskTemplate) {
+		o.UserID = nil
+	})
+}
+
+// Generates a random value for the column using the given faker
+// if faker is nil, a default faker is used
+func (m taskMods) RandomUserID(f *faker.Faker) TaskMod {
+	return TaskModFunc(func(_ context.Context, o *TaskTemplate) {
+		o.UserID = func() string {
 			return random_string(f, "36")
 		}
 	})
@@ -475,6 +602,90 @@ func (m taskMods) RandomStatus(f *faker.Faker) TaskMod {
 }
 
 // Set the model columns to this value
+func (m taskMods) Source(val string) TaskMod {
+	return TaskModFunc(func(_ context.Context, o *TaskTemplate) {
+		o.Source = func() string { return val }
+	})
+}
+
+// Set the Column from the function
+func (m taskMods) SourceFunc(f func() string) TaskMod {
+	return TaskModFunc(func(_ context.Context, o *TaskTemplate) {
+		o.Source = f
+	})
+}
+
+// Clear any values for the column
+func (m taskMods) UnsetSource() TaskMod {
+	return TaskModFunc(func(_ context.Context, o *TaskTemplate) {
+		o.Source = nil
+	})
+}
+
+// Generates a random value for the column using the given faker
+// if faker is nil, a default faker is used
+func (m taskMods) RandomSource(f *faker.Faker) TaskMod {
+	return TaskModFunc(func(_ context.Context, o *TaskTemplate) {
+		o.Source = func() string {
+			return random_string(f, "20")
+		}
+	})
+}
+
+// Set the model columns to this value
+func (m taskMods) AiInterpretationID(val null.Val[string]) TaskMod {
+	return TaskModFunc(func(_ context.Context, o *TaskTemplate) {
+		o.AiInterpretationID = func() null.Val[string] { return val }
+	})
+}
+
+// Set the Column from the function
+func (m taskMods) AiInterpretationIDFunc(f func() null.Val[string]) TaskMod {
+	return TaskModFunc(func(_ context.Context, o *TaskTemplate) {
+		o.AiInterpretationID = f
+	})
+}
+
+// Clear any values for the column
+func (m taskMods) UnsetAiInterpretationID() TaskMod {
+	return TaskModFunc(func(_ context.Context, o *TaskTemplate) {
+		o.AiInterpretationID = nil
+	})
+}
+
+// Generates a random value for the column using the given faker
+// if faker is nil, a default faker is used
+// The generated value is sometimes null
+func (m taskMods) RandomAiInterpretationID(f *faker.Faker) TaskMod {
+	return TaskModFunc(func(_ context.Context, o *TaskTemplate) {
+		o.AiInterpretationID = func() null.Val[string] {
+			if f == nil {
+				f = &defaultFaker
+			}
+
+			val := random_string(f, "36")
+			return null.From(val)
+		}
+	})
+}
+
+// Generates a random value for the column using the given faker
+// if faker is nil, a default faker is used
+// The generated value is never null
+func (m taskMods) RandomAiInterpretationIDNotNull(f *faker.Faker) TaskMod {
+	return TaskModFunc(func(_ context.Context, o *TaskTemplate) {
+		o.AiInterpretationID = func() null.Val[string] {
+			if f == nil {
+				f = &defaultFaker
+			}
+
+			val := random_string(f, "36")
+			return null.From(val)
+		}
+	})
+}
+
+// Set the model columns to this value
 func (m taskMods) CreatedAt(val time.Time) TaskMod {
 	return TaskModFunc(func(_ context.Context, o *TaskTemplate) {
 		o.CreatedAt = func() time.Time { return val }
@@ -542,5 +753,75 @@ func (m taskMods) WithParentsCascading() TaskMod {
 			return
 		}
 		ctx = taskWithParentsCascadingCtx.WithValue(ctx, true)
+		{
+
+			related := o.f.NewAiInterpretationWithContext(ctx, AiInterpretationMods.WithParentsCascading())
+			m.WithAiInterpretation(related).Apply(ctx, o)
+		}
+		{
+
+			related := o.f.NewUserWithContext(ctx, UserMods.WithParentsCascading())
+			m.WithUser(related).Apply(ctx, o)
+		}
+	})
+}
+
+func (m taskMods) WithAiInterpretation(rel *AiInterpretationTemplate) TaskMod {
+	return TaskModFunc(func(ctx context.Context, o *TaskTemplate) {
+		o.r.AiInterpretation = &taskRAiInterpretationR{
+			o: rel,
+		}
+	})
+}
+
+func (m taskMods) WithNewAiInterpretation(mods ...AiInterpretationMod) TaskMod {
+	return TaskModFunc(func(ctx context.Context, o *TaskTemplate) {
+		related := o.f.NewAiInterpretationWithContext(ctx, mods...)
+
+		m.WithAiInterpretation(related).Apply(ctx, o)
+	})
+}
+
+func (m taskMods) WithExistingAiInterpretation(em *models.AiInterpretation) TaskMod {
+	return TaskModFunc(func(ctx context.Context, o *TaskTemplate) {
+		o.r.AiInterpretation = &taskRAiInterpretationR{
+			o: o.f.FromExistingAiInterpretation(em),
+		}
+	})
+}
+
+func (m taskMods) WithoutAiInterpretation() TaskMod {
+	return TaskModFunc(func(ctx context.Context, o *TaskTemplate) {
+		o.r.AiInterpretation = nil
+	})
+}
+
+func (m taskMods) WithUser(rel *UserTemplate) TaskMod {
+	return TaskModFunc(func(ctx context.Context, o *TaskTemplate) {
+		o.r.User = &taskRUserR{
+			o: rel,
+		}
+	})
+}
+
+func (m taskMods) WithNewUser(mods ...UserMod) TaskMod {
+	return TaskModFunc(func(ctx context.Context, o *TaskTemplate) {
+		related := o.f.NewUserWithContext(ctx, mods...)
+
+		m.WithUser(related).Apply(ctx, o)
+	})
+}
+
+func (m taskMods) WithExistingUser(em *models.User) TaskMod {
+	return TaskModFunc(func(ctx context.Context, o *TaskTemplate) {
+		o.r.User = &taskRUserR{
+			o: o.f.FromExistingUser(em),
+		}
+	})
+}
+
+func (m taskMods) WithoutUser() TaskMod {
+	return TaskModFunc(func(ctx context.Context, o *TaskTemplate) {
+		o.r.User = nil
 	})
 }

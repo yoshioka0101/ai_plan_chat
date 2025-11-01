@@ -24,6 +24,15 @@ var Tasks = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
+		UserID: column{
+			Name:      "user_id",
+			DBType:    "char(36)",
+			Default:   "",
+			Comment:   "ユーザーID",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
 		Title: column{
 			Name:      "title",
 			DBType:    "varchar(500)",
@@ -54,9 +63,27 @@ var Tasks = Table[
 		Status: column{
 			Name:      "status",
 			DBType:    "varchar(20)",
-			Default:   "pending",
+			Default:   "todo",
 			Comment:   "ステータス（pending/in_progress/completed）",
 			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
+		Source: column{
+			Name:      "source",
+			DBType:    "varchar(20)",
+			Default:   "manual",
+			Comment:   "作成元",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
+		AiInterpretationID: column{
+			Name:      "ai_interpretation_id",
+			DBType:    "char(36)",
+			Default:   "",
+			Comment:   "元のAI解釈ID",
+			Nullable:  true,
 			Generated: false,
 			AutoIncr:  false,
 		},
@@ -80,6 +107,19 @@ var Tasks = Table[
 		},
 	},
 	Indexes: taskIndexes{
+		FKTasksAiInterpretation: index{
+			Type: "BTREE",
+			Name: "fk_tasks_ai_interpretation",
+			Columns: []indexColumn{
+				{
+					Name:         "ai_interpretation_id",
+					Desc:         null.FromCond(false, true),
+					IsExpression: false,
+				},
+			},
+			Unique:  false,
+			Comment: "",
+		},
 		IdxTasksCreatedAt: index{
 			Type: "BTREE",
 			Name: "idx_tasks_created_at",
@@ -119,6 +159,60 @@ var Tasks = Table[
 			Unique:  false,
 			Comment: "",
 		},
+		IdxTasksUserCreated: index{
+			Type: "BTREE",
+			Name: "idx_tasks_user_created",
+			Columns: []indexColumn{
+				{
+					Name:         "user_id",
+					Desc:         null.FromCond(false, true),
+					IsExpression: false,
+				},
+				{
+					Name:         "created_at",
+					Desc:         null.FromCond(true, true),
+					IsExpression: false,
+				},
+			},
+			Unique:  false,
+			Comment: "",
+		},
+		IdxTasksUserDue: index{
+			Type: "BTREE",
+			Name: "idx_tasks_user_due",
+			Columns: []indexColumn{
+				{
+					Name:         "user_id",
+					Desc:         null.FromCond(false, true),
+					IsExpression: false,
+				},
+				{
+					Name:         "due_at",
+					Desc:         null.FromCond(false, true),
+					IsExpression: false,
+				},
+			},
+			Unique:  false,
+			Comment: "",
+		},
+		IdxTasksUserStatus: index{
+			Type: "BTREE",
+			Name: "idx_tasks_user_status",
+			Columns: []indexColumn{
+				{
+					Name:         "user_id",
+					Desc:         null.FromCond(false, true),
+					IsExpression: false,
+				},
+				{
+					Name:         "status",
+					Desc:         null.FromCond(false, true),
+					IsExpression: false,
+				},
+			},
+			Unique:  false,
+			Comment: "",
+		},
 		PRIMARY: index{
 			Type: "BTREE",
 			Name: "PRIMARY",
@@ -138,43 +232,75 @@ var Tasks = Table[
 		Columns: []string{"id"},
 		Comment: "",
 	},
+	ForeignKeys: taskForeignKeys{
+		FKTasksAiInterpretation: foreignKey{
+			constraint: constraint{
+				Name:    "fk_tasks_ai_interpretation",
+				Columns: []string{"ai_interpretation_id"},
+				Comment: "",
+			},
+			ForeignTable:   "ai_interpretations",
+			ForeignColumns: []string{"id"},
+		},
+		FKTasksUser: foreignKey{
+			constraint: constraint{
+				Name:    "fk_tasks_user",
+				Columns: []string{"user_id"},
+				Comment: "",
+			},
+			ForeignTable:   "users",
+			ForeignColumns: []string{"id"},
+		},
+	},
 
 	Comment: "タスク",
 }
 
 type taskColumns struct {
-	ID          column
-	Title       column
-	Description column
-	DueAt       column
-	Status      column
-	CreatedAt   column
-	UpdatedAt   column
+	ID                 column
+	UserID             column
+	Title              column
+	Description        column
+	DueAt              column
+	Status             column
+	Source             column
+	AiInterpretationID column
+	CreatedAt          column
+	UpdatedAt          column
 }
 
 func (c taskColumns) AsSlice() []column {
 	return []column{
-		c.ID, c.Title, c.Description, c.DueAt, c.Status, c.CreatedAt, c.UpdatedAt,
+		c.ID, c.UserID, c.Title, c.Description, c.DueAt, c.Status, c.Source, c.AiInterpretationID, c.CreatedAt, c.UpdatedAt,
 	}
 }
 
 type taskIndexes struct {
-	IdxTasksCreatedAt index
-	IdxTasksDueAt     index
-	IdxTasksStatus    index
-	PRIMARY           index
+	FKTasksAiInterpretation index
+	IdxTasksCreatedAt       index
+	IdxTasksDueAt           index
+	IdxTasksStatus          index
+	IdxTasksUserCreated     index
+	IdxTasksUserDue         index
+	IdxTasksUserStatus      index
+	PRIMARY                 index
 }
 
 func (i taskIndexes) AsSlice() []index {
 	return []index{
-		i.IdxTasksCreatedAt, i.IdxTasksDueAt, i.IdxTasksStatus, i.PRIMARY,
+		i.FKTasksAiInterpretation, i.IdxTasksCreatedAt, i.IdxTasksDueAt, i.IdxTasksStatus, i.IdxTasksUserCreated, i.IdxTasksUserDue, i.IdxTasksUserStatus, i.PRIMARY,
 	}
 }
 
-type taskForeignKeys struct{}
+type taskForeignKeys struct {
+	FKTasksAiInterpretation foreignKey
+	FKTasksUser             foreignKey
+}
 
 func (f taskForeignKeys) AsSlice() []foreignKey {
-	return []foreignKey{}
+	return []foreignKey{
+		f.FKTasksAiInterpretation, f.FKTasksUser,
+	}
 }
 
 type taskUniques struct{}

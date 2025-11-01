@@ -1,0 +1,47 @@
+type: object
+properties:
+  id:
+    type: string
+    format: uuid
+    description: AI解釈ID
+  user_id:
+    type: string
+    format: uuid
+    description: ユーザーID
+  input_text:
+    type: string
+    description: 入力テキスト
+  structured_result:
+    type: object
+    description: AI解析結果（JSON）
+    properties:
+      type:
+        type: string
+        enum: [task, event, unknown]
+      title:
+        type: string
+      description:
+        type: string
+      due_at:
+        type: string
+        format: date-time
+      starts_at:
+        type: string
+        format: date-time
+      ends_at:
+        type: string
+        format: date-time
+  ai_model:
+    type: string
+    description: 使用AIモデル
+  created_at:
+    type: string
+    format: date-time
+    description: 作成日時
+required:
+  - id
+  - user_id
+  - input_text
+  - structured_result
+  - ai_model
+  - created_at

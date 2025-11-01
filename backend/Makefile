@@ -25,6 +25,7 @@ help:
 	@echo ""
 	@echo "その他:"
 	@echo "  dev-full       コード生成 + ドキュメント + 開発サーバー"
+	@echo "  generate-jwt   JWT_SECRETを生成"
 	@echo "  ci             GitHub Actions ワークフローの雛形をコピー"
 	@echo "  help           このヘルプを表示"
 
@@ -150,3 +151,8 @@ migrate-apply:
 # マイグレーション適用 + 型生成を一括実行
 db-sync: migrate-apply gen-models
 	@echo "✅ データベース同期完了"
+
+# JWT_SECRETを生成
+generate-jwt:
+	@echo "JWT_SECRETを生成しています..."
+	@go run cmd/generate-jwt-secret/main.go

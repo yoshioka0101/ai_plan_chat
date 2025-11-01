@@ -11,7 +11,7 @@ interface CalendarViewProps {
   onNewTaskClick: (date?: Date) => void;
 }
 
-export const CalendarView = ({ tasks, onEdit, onDelete, onStatusChange, onNewTaskClick }: CalendarViewProps) => {
+export const CalendarView = ({ tasks, onEdit, onNewTaskClick }: CalendarViewProps) => {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const monthStart = startOfMonth(currentDate);

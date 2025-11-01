@@ -11,13 +11,15 @@ import (
 type Server struct {
 	*handler.HealthHandler
 	*handler.TaskHandler
+	*handler.AuthHandler
 }
 
 // NewServer は統合ハンドラーを作成します
-func NewServer(healthHandler *handler.HealthHandler, taskHandler *handler.TaskHandler) *Server {
+func NewServer(healthHandler *handler.HealthHandler, taskHandler *handler.TaskHandler, authHandler *handler.AuthHandler) *Server {
 	return &Server{
 		HealthHandler: healthHandler,
 		TaskHandler:   taskHandler,
+		AuthHandler:   authHandler,
 	}
 }
 
@@ -38,6 +40,11 @@ func SetupRoutes(server *Server) *gin.Engine {
 
 	// Health check
 	r.GET("/health", server.HealthHandler.GetHealth)
+
+	// Auth endpoints
+	r.GET("/auth/google", server.AuthHandler.GoogleAuth)
+	r.GET("/auth/google/callback", server.AuthHandler.GoogleCallback)
+	r.POST("/auth/google/callback", server.AuthHandler.GoogleCallback)
 
 	// API v1 routes
 	v1 := r.Group("/api/v1")

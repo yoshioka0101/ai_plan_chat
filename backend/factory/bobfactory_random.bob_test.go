@@ -4,6 +4,7 @@
 package factory
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/stephenafamo/bob"
@@ -31,5 +32,16 @@ func TestRandom_time_Time(t *testing.T) {
 
 	if val1.Equal(val2) {
 		t.Fatalf("random_time_Time() returned the same value twice: %v", val1)
+	}
+}
+
+func TestRandom_types_JSON_json_RawMessage_(t *testing.T) {
+	t.Parallel()
+
+	val1 := random_types_JSON_json_RawMessage_(nil)
+	val2 := random_types_JSON_json_RawMessage_(nil)
+
+	if bytes.Equal(val1.Val, val2.Val) {
+		t.Fatalf("random_types_JSON_json_RawMessage_() returned the same value twice: %v", val1)
 	}
 }

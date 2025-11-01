@@ -5,18 +5,60 @@ package factory
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/aarondl/opt/null"
-	models "github.com/yoshioka0101/ai_plan_chat/gen/models"
+	"github.com/stephenafamo/bob/types"
+	models "github.com/yoshioka0101/ai_plan_chat/models"
 )
 
 type Factory struct {
-	baseTaskMods TaskModSlice
+	baseAiInterpretationMods AiInterpretationModSlice
+	baseTaskMods             TaskModSlice
+	baseUserAuthMods         UserAuthModSlice
+	baseUserMods             UserModSlice
 }
 
 func New() *Factory {
 	return &Factory{}
+}
+
+func (f *Factory) NewAiInterpretation(mods ...AiInterpretationMod) *AiInterpretationTemplate {
+	return f.NewAiInterpretationWithContext(context.Background(), mods...)
+}
+
+func (f *Factory) NewAiInterpretationWithContext(ctx context.Context, mods ...AiInterpretationMod) *AiInterpretationTemplate {
+	o := &AiInterpretationTemplate{f: f}
+
+	if f != nil {
+		f.baseAiInterpretationMods.Apply(ctx, o)
+	}
+
+	AiInterpretationModSlice(mods).Apply(ctx, o)
+
+	return o
+}
+
+func (f *Factory) FromExistingAiInterpretation(m *models.AiInterpretation) *AiInterpretationTemplate {
+	o := &AiInterpretationTemplate{f: f, alreadyPersisted: true}
+
+	o.ID = func() string { return m.ID }
+	o.UserID = func() string { return m.UserID }
+	o.InputText = func() string { return m.InputText }
+	o.StructuredResult = func() types.JSON[json.RawMessage] { return m.StructuredResult }
+	o.AiModel = func() string { return m.AiModel }
+	o.CreatedAt = func() time.Time { return m.CreatedAt }
+
+	ctx := context.Background()
+	if m.R.User != nil {
+		AiInterpretationMods.WithExistingUser(m.R.User).Apply(ctx, o)
+	}
+	if len(m.R.Tasks) > 0 {
+		AiInterpretationMods.AddExistingTasks(m.R.Tasks...).Apply(ctx, o)
+	}
+
+	return o
 }
 
 func (f *Factory) NewTask(mods ...TaskMod) *TaskTemplate {
@@ -39,14 +81,109 @@ func (f *Factory) FromExistingTask(m *models.Task) *TaskTemplate {
 	o := &TaskTemplate{f: f, alreadyPersisted: true}
 
 	o.ID = func() string { return m.ID }
+	o.UserID = func() string { return m.UserID }
 	o.Title = func() string { return m.Title }
 	o.Description = func() null.Val[string] { return m.Description }
 	o.DueAt = func() null.Val[time.Time] { return m.DueAt }
 	o.Status = func() string { return m.Status }
+	o.Source = func() string { return m.Source }
+	o.AiInterpretationID = func() null.Val[string] { return m.AiInterpretationID }
 	o.CreatedAt = func() time.Time { return m.CreatedAt }
 	o.UpdatedAt = func() time.Time { return m.UpdatedAt }
 
+	ctx := context.Background()
+	if m.R.AiInterpretation != nil {
+		TaskMods.WithExistingAiInterpretation(m.R.AiInterpretation).Apply(ctx, o)
+	}
+	if m.R.User != nil {
+		TaskMods.WithExistingUser(m.R.User).Apply(ctx, o)
+	}
+
 	return o
+}
+
+func (f *Factory) NewUserAuth(mods ...UserAuthMod) *UserAuthTemplate {
+	return f.NewUserAuthWithContext(context.Background(), mods...)
+}
+
+func (f *Factory) NewUserAuthWithContext(ctx context.Context, mods ...UserAuthMod) *UserAuthTemplate {
+	o := &UserAuthTemplate{f: f}
+
+	if f != nil {
+		f.baseUserAuthMods.Apply(ctx, o)
+	}
+
+	UserAuthModSlice(mods).Apply(ctx, o)
+
+	return o
+}
+
+func (f *Factory) FromExistingUserAuth(m *models.UserAuth) *UserAuthTemplate {
+	o := &UserAuthTemplate{f: f, alreadyPersisted: true}
+
+	o.ID = func() string { return m.ID }
+	o.UserID = func() string { return m.UserID }
+	o.IdentityType = func() string { return m.IdentityType }
+	o.Identifier = func() string { return m.Identifier }
+	o.Credential = func() null.Val[string] { return m.Credential }
+	o.CreatedAt = func() time.Time { return m.CreatedAt }
+	o.UpdatedAt = func() time.Time { return m.UpdatedAt }
+
+	ctx := context.Background()
+	if m.R.User != nil {
+		UserAuthMods.WithExistingUser(m.R.User).Apply(ctx, o)
+	}
+
+	return o
+}
+
+func (f *Factory) NewUser(mods ...UserMod) *UserTemplate {
+	return f.NewUserWithContext(context.Background(), mods...)
+}
+
+func (f *Factory) NewUserWithContext(ctx context.Context, mods ...UserMod) *UserTemplate {
+	o := &UserTemplate{f: f}
+
+	if f != nil {
+		f.baseUserMods.Apply(ctx, o)
+	}
+
+	UserModSlice(mods).Apply(ctx, o)
+
+	return o
+}
+
+func (f *Factory) FromExistingUser(m *models.User) *UserTemplate {
+	o := &UserTemplate{f: f, alreadyPersisted: true}
+
+	o.ID = func() string { return m.ID }
+	o.GoogleID = func() string { return m.GoogleID }
+	o.Email = func() string { return m.Email }
+	o.Nickname = func() string { return m.Nickname }
+	o.Avatar = func() null.Val[string] { return m.Avatar }
+	o.CreatedAt = func() time.Time { return m.CreatedAt }
+	o.UpdatedAt = func() time.Time { return m.UpdatedAt }
+
+	ctx := context.Background()
+	if len(m.R.AiInterpretations) > 0 {
+		UserMods.AddExistingAiInterpretations(m.R.AiInterpretations...).Apply(ctx, o)
+	}
+	if len(m.R.Tasks) > 0 {
+		UserMods.AddExistingTasks(m.R.Tasks...).Apply(ctx, o)
+	}
+	if len(m.R.UserAuths) > 0 {
+		UserMods.AddExistingUserAuths(m.R.UserAuths...).Apply(ctx, o)
+	}
+
+	return o
+}
+
+func (f *Factory) ClearBaseAiInterpretationMods() {
+	f.baseAiInterpretationMods = nil
+}
+
+func (f *Factory) AddBaseAiInterpretationMod(mods ...AiInterpretationMod) {
+	f.baseAiInterpretationMods = append(f.baseAiInterpretationMods, mods...)
 }
 
 func (f *Factory) ClearBaseTaskMods() {
@@ -55,4 +192,20 @@ func (f *Factory) ClearBaseTaskMods() {
 
 func (f *Factory) AddBaseTaskMod(mods ...TaskMod) {
 	f.baseTaskMods = append(f.baseTaskMods, mods...)
+}
+
+func (f *Factory) ClearBaseUserAuthMods() {
+	f.baseUserAuthMods = nil
+}
+
+func (f *Factory) AddBaseUserAuthMod(mods ...UserAuthMod) {
+	f.baseUserAuthMods = append(f.baseUserAuthMods, mods...)
+}
+
+func (f *Factory) ClearBaseUserMods() {
+	f.baseUserMods = nil
+}
+
+func (f *Factory) AddBaseUserMod(mods ...UserMod) {
+	f.baseUserMods = append(f.baseUserMods, mods...)
 }
