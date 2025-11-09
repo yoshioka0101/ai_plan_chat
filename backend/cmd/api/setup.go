@@ -44,6 +44,11 @@ func initializeAuthHandler(db *sql.DB, config *config.Config) *handler.AuthHandl
 	return handler.NewAuthHandler(authUsecase, authService, authPresenter)
 }
 
+// initializeInterpretationHandler はInterpretationHandlerを初期化します（デモ版）
+func initializeInterpretationHandler() *handler.InterpretationHandler {
+	return handler.NewInterpretationHandler()
+}
+
 // InitializeServer は全ての依存性注入を行い、Ginルーターを返します
 func InitializeServer(db *sql.DB, config *config.Config) *gin.Engine {
 
@@ -54,9 +59,10 @@ func InitializeServer(db *sql.DB, config *config.Config) *gin.Engine {
 	healthHandler := initializeHealthHandler()
 	taskHandler := initializeTaskHandler(db, logger)
 	authHandler := initializeAuthHandler(db, config)
+	interpretationHandler := initializeInterpretationHandler()
 
 	// 統合ハンドラーを作成
-	server := http.NewServer(healthHandler, taskHandler, authHandler)
+	server := http.NewServer(healthHandler, taskHandler, authHandler, interpretationHandler)
 
 	// ルーターをセットアップ（OpenAPI仕様に基づく）
 	return http.SetupRoutes(server)

@@ -321,9 +321,6 @@ type ListInterpretationsParamsType string
 // GoogleCallbackJSONRequestBody defines body for GoogleCallback for application/json ContentType.
 type GoogleCallbackJSONRequestBody GoogleCallbackJSONBody
 
-// InterpretAndCreateJSONRequestBody defines body for InterpretAndCreate for application/json ContentType.
-type InterpretAndCreateJSONRequestBody = CreateInterpretationRequest
-
 // CreateInterpretationJSONRequestBody defines body for CreateInterpretation for application/json ContentType.
 type CreateInterpretationJSONRequestBody = CreateInterpretationRequest
 
@@ -414,11 +411,6 @@ type ClientInterface interface {
 
 	GoogleCallback(ctx context.Context, body GoogleCallbackJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// InterpretAndCreateWithBody request with any body
-	InterpretAndCreateWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	InterpretAndCreate(ctx context.Context, body InterpretAndCreateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// GetHealth request
 	GetHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -472,30 +464,6 @@ func (c *Client) GoogleCallbackWithBody(ctx context.Context, contentType string,
 
 func (c *Client) GoogleCallback(ctx context.Context, body GoogleCallbackJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGoogleCallbackRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) InterpretAndCreateWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewInterpretAndCreateRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) InterpretAndCreate(ctx context.Context, body InterpretAndCreateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewInterpretAndCreateRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -695,46 +663,6 @@ func NewGoogleCallbackRequestWithBody(server string, contentType string, body io
 	}
 
 	operationPath := fmt.Sprintf("/auth/google/callback")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewInterpretAndCreateRequest calls the generic InterpretAndCreate builder with application/json body
-func NewInterpretAndCreateRequest(server string, body InterpretAndCreateJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewInterpretAndCreateRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewInterpretAndCreateRequestWithBody generates requests for InterpretAndCreate with any type of body
-func NewInterpretAndCreateRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/chat")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1213,11 +1141,6 @@ type ClientWithResponsesInterface interface {
 
 	GoogleCallbackWithResponse(ctx context.Context, body GoogleCallbackJSONRequestBody, reqEditors ...RequestEditorFn) (*GoogleCallbackResponse, error)
 
-	// InterpretAndCreateWithBodyWithResponse request with any body
-	InterpretAndCreateWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InterpretAndCreateResponse, error)
-
-	InterpretAndCreateWithResponse(ctx context.Context, body InterpretAndCreateJSONRequestBody, reqEditors ...RequestEditorFn) (*InterpretAndCreateResponse, error)
-
 	// GetHealthWithResponse request
 	GetHealthWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetHealthResponse, error)
 
@@ -1275,32 +1198,6 @@ func (r GoogleCallbackResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GoogleCallbackResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type InterpretAndCreateResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *InterpretationResponse
-	JSON400      *ErrorResponse
-	JSON401      *ErrorResponse
-	JSON422      *ErrorResponse
-	JSON500      *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r InterpretAndCreateResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r InterpretAndCreateResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1567,23 +1464,6 @@ func (c *ClientWithResponses) GoogleCallbackWithResponse(ctx context.Context, bo
 	return ParseGoogleCallbackResponse(rsp)
 }
 
-// InterpretAndCreateWithBodyWithResponse request with arbitrary body returning *InterpretAndCreateResponse
-func (c *ClientWithResponses) InterpretAndCreateWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InterpretAndCreateResponse, error) {
-	rsp, err := c.InterpretAndCreateWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseInterpretAndCreateResponse(rsp)
-}
-
-func (c *ClientWithResponses) InterpretAndCreateWithResponse(ctx context.Context, body InterpretAndCreateJSONRequestBody, reqEditors ...RequestEditorFn) (*InterpretAndCreateResponse, error) {
-	rsp, err := c.InterpretAndCreate(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseInterpretAndCreateResponse(rsp)
-}
-
 // GetHealthWithResponse request returning *GetHealthResponse
 func (c *ClientWithResponses) GetHealthWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetHealthResponse, error) {
 	rsp, err := c.GetHealth(ctx, reqEditors...)
@@ -1733,60 +1613,6 @@ func ParseGoogleCallbackResponse(rsp *http.Response) (*GoogleCallbackResponse, e
 			return nil, err
 		}
 		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseInterpretAndCreateResponse parses an HTTP response from a InterpretAndCreateWithResponse call
-func ParseInterpretAndCreateResponse(rsp *http.Response) (*InterpretAndCreateResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &InterpretAndCreateResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest InterpretationResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON422 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest ErrorResponse
@@ -2196,9 +2022,6 @@ type ServerInterface interface {
 	// GoogleCallback
 	// (POST /auth/google/callback)
 	GoogleCallback(c *gin.Context)
-	// InterpretAndCreate
-	// (POST /chat)
-	InterpretAndCreate(c *gin.Context)
 	// GetHealth
 	// (GET /health)
 	GetHealth(c *gin.Context)
@@ -2251,21 +2074,6 @@ func (siw *ServerInterfaceWrapper) GoogleCallback(c *gin.Context) {
 	}
 
 	siw.Handler.GoogleCallback(c)
-}
-
-// InterpretAndCreate operation middleware
-func (siw *ServerInterfaceWrapper) InterpretAndCreate(c *gin.Context) {
-
-	c.Set(BearerAuthScopes, []string{})
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.InterpretAndCreate(c)
 }
 
 // GetHealth operation middleware
@@ -2516,7 +2324,6 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	}
 
 	router.POST(options.BaseURL+"/auth/google/callback", wrapper.GoogleCallback)
-	router.POST(options.BaseURL+"/chat", wrapper.InterpretAndCreate)
 	router.GET(options.BaseURL+"/health", wrapper.GetHealth)
 	router.GET(options.BaseURL+"/interpretations", wrapper.ListInterpretations)
 	router.POST(options.BaseURL+"/interpretations", wrapper.CreateInterpretation)
