@@ -32,12 +32,7 @@ const (
 
 // Defines values for AIInterpretationStructuredResultType.
 const (
-	AIInterpretationStructuredResultTypeEvent    AIInterpretationStructuredResultType = "event"
-	AIInterpretationStructuredResultTypeExpense  AIInterpretationStructuredResultType = "expense"
-	AIInterpretationStructuredResultTypeNote     AIInterpretationStructuredResultType = "note"
-	AIInterpretationStructuredResultTypeReminder AIInterpretationStructuredResultType = "reminder"
-	AIInterpretationStructuredResultTypeTodo     AIInterpretationStructuredResultType = "todo"
-	AIInterpretationStructuredResultTypeUnknown  AIInterpretationStructuredResultType = "unknown"
+	AIInterpretationStructuredResultTypeTodo AIInterpretationStructuredResultType = "todo"
 )
 
 // Defines values for CreateTaskRequestStatus.
@@ -113,31 +108,13 @@ type AIInterpretation struct {
 		// Description 説明
 		Description *string `json:"description,omitempty"`
 
-		// Metadata 追加のメタデータ
+		// Metadata Todoのメタデータ
 		Metadata *struct {
-			// Amount 金額
-			Amount *float32 `json:"amount,omitempty"`
-
-			// Category カテゴリ
-			Category *string `json:"category,omitempty"`
-
-			// Currency 通貨
-			Currency *string `json:"currency,omitempty"`
-
 			// Deadline 期限
 			Deadline *time.Time `json:"deadline,omitempty"`
 
-			// EndTime 終了時刻
-			EndTime *time.Time `json:"end_time,omitempty"`
-
-			// Location 場所
-			Location *string `json:"location,omitempty"`
-
 			// Priority 優先度
 			Priority *AIInterpretationStructuredResultMetadataPriority `json:"priority,omitempty"`
-
-			// StartTime 開始時刻
-			StartTime *time.Time `json:"start_time,omitempty"`
 
 			// Tags タグ
 			Tags *[]string `json:"tags,omitempty"`
@@ -146,7 +123,7 @@ type AIInterpretation struct {
 		// Title タイトル
 		Title *string `json:"title,omitempty"`
 
-		// Type アイテムタイプ
+		// Type アイテムタイプ（現在はtodoのみサポート）
 		Type *AIInterpretationStructuredResultType `json:"type,omitempty"`
 	} `json:"structured_result"`
 
@@ -157,7 +134,7 @@ type AIInterpretation struct {
 // AIInterpretationStructuredResultMetadataPriority 優先度
 type AIInterpretationStructuredResultMetadataPriority string
 
-// AIInterpretationStructuredResultType アイテムタイプ
+// AIInterpretationStructuredResultType アイテムタイプ（現在はtodoのみサポート）
 type AIInterpretationStructuredResultType string
 
 // AuthResponse defines model for AuthResponse.

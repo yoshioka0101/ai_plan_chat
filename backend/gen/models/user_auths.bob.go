@@ -25,19 +25,19 @@ import (
 
 // UserAuth is an object representing the database table.
 type UserAuth struct {
-	// 認証ID (UUID)
+	// èªè¨¼ID (UUID)
 	ID string `db:"id,pk" `
-	// ユーザーID
+	// ãƒ¦ãƒ¼ã‚¶ãƒ¼ID
 	UserID string `db:"user_id" `
-	// 認証タイプ（google, email, github等）
+	// èªè¨¼ã‚¿ã‚¤ãƒ—ï¼ˆgoogle, email, githubç­‰ï¼‰
 	IdentityType string `db:"identity_type" `
-	// 識別子（メールアドレス、ユーザー名等）
+	// è­˜åˆ¥å­ï¼ˆãƒ¡ãƒ¼ãƒ«ã‚¢ãƒ‰ãƒ¬ã‚¹ã€ãƒ¦ãƒ¼ã‚¶ãƒ¼åç­‰ï¼‰
 	Identifier string `db:"identifier" `
-	// 認証情報（トークン、認証コード等）
+	// èªè¨¼æƒ…å ±ï¼ˆãƒˆãƒ¼ã‚¯ãƒ³ã€èªè¨¼ã‚³ãƒ¼ãƒ‰ç­‰ï¼‰
 	Credential null.Val[string] `db:"credential" `
-	// 作成日時
+	// ä½œæˆæ—¥æ™‚
 	CreatedAt time.Time `db:"created_at" `
-	// 更新日時
+	// æ›´æ–°æ—¥æ™‚
 	UpdatedAt time.Time `db:"updated_at" `
 
 	R userAuthR `db:"-" `

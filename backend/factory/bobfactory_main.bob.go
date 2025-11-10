@@ -48,6 +48,8 @@ func (f *Factory) FromExistingAiInterpretation(m *models.AiInterpretation) *AiIn
 	o.InputText = func() string { return m.InputText }
 	o.StructuredResult = func() types.JSON[json.RawMessage] { return m.StructuredResult }
 	o.AiModel = func() string { return m.AiModel }
+	o.AiPromptTokens = func() null.Val[int32] { return m.AiPromptTokens }
+	o.AiCompletionTokens = func() null.Val[int32] { return m.AiCompletionTokens }
 	o.CreatedAt = func() time.Time { return m.CreatedAt }
 
 	ctx := context.Background()

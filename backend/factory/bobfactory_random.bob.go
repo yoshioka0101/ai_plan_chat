@@ -17,6 +17,14 @@ import (
 
 var defaultFaker = faker.New()
 
+func random_int32(f *faker.Faker, limits ...string) int32 {
+	if f == nil {
+		f = &defaultFaker
+	}
+
+	return f.Int32()
+}
+
 func random_string(f *faker.Faker, limits ...string) string {
 	if f == nil {
 		f = &defaultFaker
