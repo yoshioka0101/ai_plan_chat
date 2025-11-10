@@ -10,7 +10,7 @@ import (
 
 	"github.com/stephenafamo/bob"
 	factory "github.com/yoshioka0101/ai_plan_chat/factory"
-	models "github.com/yoshioka0101/ai_plan_chat/models"
+	models "github.com/yoshioka0101/ai_plan_chat/gen/models"
 )
 
 func TestUserUniqueConstraintErrors(t *testing.T) {

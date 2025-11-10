@@ -10,7 +10,7 @@ import (
 
 	"github.com/aarondl/opt/null"
 	"github.com/stephenafamo/bob/types"
-	models "github.com/yoshioka0101/ai_plan_chat/models"
+	models "github.com/yoshioka0101/ai_plan_chat/gen/models"
 )
 
 type Factory struct {
