@@ -18,6 +18,9 @@ type Config struct {
 
 	// 認証設定
 	Auth AuthConfig
+
+	// AI設定
+	AI AIConfig
 }
 
 // DatabaseConfig データベース接続設定
@@ -37,6 +40,12 @@ type AuthConfig struct {
 	GoogleClientID     string `json:"-"`
 	GoogleClientSecret string `json:"-"`
 	GoogleRedirectURL  string `json:"-"`
+}
+
+// AIConfig AI設定
+type AIConfig struct {
+	GeminiAPIKey   string `json:"-"`
+	GeminiModel    string `json:"gemini_model"`
 }
 
 // Load 環境変数から設定を読み込む
@@ -127,6 +136,18 @@ func Load() *Config {
 		log.Fatal("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables are required for OAuth authentication.")
 	}
 
+	// Gemini API Key
+	geminiAPIKey := os.Getenv("GEMINI_API_KEY")
+	if geminiAPIKey == "" {
+		log.Println("Warning: GEMINI_API_KEY is not set. AI features will not work.")
+	}
+
+	// Gemini Model
+	geminiModel := os.Getenv("GEMINI_MODEL")
+	if geminiModel == "" {
+		geminiModel = "gemini-1.5-flash" // デフォルト
+	}
+
 	config := &Config{
 		Port: port,
 
@@ -145,6 +166,11 @@ func Load() *Config {
 			GoogleClientID:     googleClientID,
 			GoogleClientSecret: googleClientSecret,
 			GoogleRedirectURL:  googleRedirectURL,
+		},
+
+		AI: AIConfig{
+			GeminiAPIKey: geminiAPIKey,
+			GeminiModel:  geminiModel,
 		},
 	}
 

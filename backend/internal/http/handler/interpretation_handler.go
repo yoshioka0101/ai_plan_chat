@@ -8,81 +8,85 @@ import (
 	"github.com/google/uuid"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 	"github.com/yoshioka0101/ai_plan_chat/gen/api"
+	"github.com/yoshioka0101/ai_plan_chat/internal/entity"
+	apperrors "github.com/yoshioka0101/ai_plan_chat/internal/http/errors"
+	"github.com/yoshioka0101/ai_plan_chat/internal/interfaces"
+	"github.com/yoshioka0101/ai_plan_chat/internal/service"
 )
 
 // InterpretationHandler はAI解釈エンドポイントのハンドラー
-type InterpretationHandler struct{}
-
-// NewInterpretationHandler はInterpretationHandlerを作成します
-func NewInterpretationHandler() *InterpretationHandler {
-	return &InterpretationHandler{}
+type InterpretationHandler struct {
+	geminiService          *service.GeminiService
+	interpretationRepo     interfaces.InterpretationRepository
 }
 
-// CreateInterpretation は自然言語入力からAI解釈を作成します（デモ実装）
+// NewInterpretationHandler はInterpretationHandlerを作成します
+func NewInterpretationHandler(geminiService *service.GeminiService, interpretationRepo interfaces.InterpretationRepository) *InterpretationHandler {
+	return &InterpretationHandler{
+		geminiService:      geminiService,
+		interpretationRepo: interpretationRepo,
+	}
+}
+
+// CreateInterpretation は自然言語入力からAI解釈を作成します
 func (h *InterpretationHandler) CreateInterpretation(c *gin.Context) {
 	var req api.CreateInterpretationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, api.ErrorResponse{
-			Code:    ptrString("invalid_request"),
-			Message: ptrString(err.Error()),
-		})
+		apperrors.RespondWithError(c, apperrors.ErrInvalidRequest, err.Error())
 		return
 	}
 
-	// デモ実装: 入力テキストをそのままエコーして、簡単な解析結果を返す
 	inputText := req.InputText
 
-	// 簡単なキーワードベースの判定
-	interpretationType := determineType(inputText)
-
-	// デモレスポンスを作成
-	now := time.Now()
-	uuidVal, _ := uuid.Parse(uuid.New().String())
-	demoUserUUID, _ := uuid.Parse("00000000-0000-0000-0000-000000000001")
-
-	tags := []string{"demo", "test"}
-	interpretation := api.AIInterpretation{
-		Id:        openapi_types.UUID(uuidVal),
-		UserId:    openapi_types.UUID(demoUserUUID),
-		InputText: inputText,
-		StructuredResult: struct {
-			Description *string `json:"description,omitempty"`
-			Metadata    *struct {
-				Amount    *float32   `json:"amount,omitempty"`
-				Category  *string    `json:"category,omitempty"`
-				Currency  *string    `json:"currency,omitempty"`
-				Deadline  *time.Time `json:"deadline,omitempty"`
-				EndTime   *time.Time `json:"end_time,omitempty"`
-				Location  *string    `json:"location,omitempty"`
-				Priority  *api.AIInterpretationStructuredResultMetadataPriority `json:"priority,omitempty"`
-				StartTime *time.Time `json:"start_time,omitempty"`
-				Tags      *[]string  `json:"tags,omitempty"`
-			} `json:"metadata,omitempty"`
-			Title *string                                     `json:"title,omitempty"`
-			Type  *api.AIInterpretationStructuredResultType `json:"type,omitempty"`
-		}{
-			Title:       ptrString(inputText),
-			Description: ptrString("これはデモ実装です。入力: " + inputText),
-			Metadata: &struct {
-				Amount    *float32   `json:"amount,omitempty"`
-				Category  *string    `json:"category,omitempty"`
-				Currency  *string    `json:"currency,omitempty"`
-				Deadline  *time.Time `json:"deadline,omitempty"`
-				EndTime   *time.Time `json:"end_time,omitempty"`
-				Location  *string    `json:"location,omitempty"`
-				Priority  *api.AIInterpretationStructuredResultMetadataPriority `json:"priority,omitempty"`
-				StartTime *time.Time `json:"start_time,omitempty"`
-				Tags      *[]string  `json:"tags,omitempty"`
-			}{
-				Tags: &tags,
-			},
-		},
-		AiModel:            "demo-model-v1",
-		AiPromptTokens:     ptrInt(len(inputText)),
-		AiCompletionTokens: ptrInt(50),
-		CreatedAt:          now,
+	// Geminiサービスの存在チェック
+	if h.geminiService == nil {
+		apperrors.RespondWithError(c, apperrors.ErrConfigurationError, "AI service is not configured")
+		return
 	}
 
+	// Gemini APIで解析
+	result, err := h.geminiService.InterpretInput(c.Request.Context(), inputText)
+	if err != nil {
+		apperrors.RespondWithError(c, apperrors.ErrAIInterpretationError, "Failed to interpret input: "+err.Error())
+		return
+	}
+
+	// TODO: 実際のユーザーIDは認証トークンから取得する
+	// 現時点では仮のユーザーIDを使用
+	userID := uuid.New().String()
+	interpretationID := uuid.New().String()
+
+	// Entity型でデータベースに保存
+	entityInterpretation := &entity.AIInterpretation{
+		ID:                 interpretationID,
+		UserID:             userID,
+		InputText:          inputText,
+		Result:             *result,
+		AIModel:            h.geminiService.ModelName(),
+		AIPromptTokens:     ptrInt(len(inputText) / 4), // 概算
+		AICompletionTokens: ptrInt(100),                // 概算
+	}
+
+	// データベースに保存
+	if err := h.interpretationRepo.CreateInterpretation(c.Request.Context(), entityInterpretation); err != nil {
+		apperrors.RespondWithError(c, apperrors.ErrDatabaseError, "Failed to save interpretation: "+err.Error())
+		return
+	}
+
+	// レスポンスを作成
+	interpretationIDUUID, _ := uuid.Parse(interpretationID)
+	userIDUUID, _ := uuid.Parse(userID)
+
+	interpretation := buildAIInterpretation(
+		interpretationIDUUID,
+		userIDUUID,
+		inputText,
+		result,
+		h.geminiService.ModelName(),
+		entityInterpretation.CreatedAt,
+	)
+
+	interpretationType := convertToResponseType(result.Type)
 	response := api.InterpretationResponse{
 		Type:           interpretationType,
 		Interpretation: interpretation,
@@ -92,70 +96,143 @@ func (h *InterpretationHandler) CreateInterpretation(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// ListInterpretations はAI解釈履歴を取得します（デモ実装）
+// ListInterpretations はAI解釈履歴を取得します
 func (h *InterpretationHandler) ListInterpretations(c *gin.Context) {
-	// デモ実装: 空の配列を返す
+	// TODO: 実際のユーザーIDは認証トークンから取得する
+	// 現時点では仮のユーザーIDを使用（全件取得のため適当なID）
+	userID := "00000000-0000-0000-0000-000000000000"
+
+	limit := 20
+	offset := 0
+
+	// データベースから取得
+	interpretations, err := h.interpretationRepo.GetInterpretationsByUserID(c.Request.Context(), userID, limit, offset)
+	if err != nil {
+		apperrors.RespondWithError(c, apperrors.ErrDatabaseError, "Failed to get interpretations: "+err.Error())
+		return
+	}
+
+	// APIレスポンス型に変換
+	apiInterpretations := make([]api.AIInterpretation, 0, len(interpretations))
+	for _, interp := range interpretations {
+		interpretationIDUUID, _ := uuid.Parse(interp.ID)
+		userIDUUID, _ := uuid.Parse(interp.UserID)
+
+		apiInterp := buildAIInterpretation(
+			interpretationIDUUID,
+			userIDUUID,
+			interp.InputText,
+			&interp.Result,
+			interp.AIModel,
+			interp.CreatedAt,
+		)
+		apiInterpretations = append(apiInterpretations, apiInterp)
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"interpretations": []api.AIInterpretation{},
-		"total":           0,
-		"limit":           20,
-		"offset":          0,
+		"interpretations": apiInterpretations,
+		"total":           len(apiInterpretations),
+		"limit":           limit,
+		"offset":          offset,
 	})
 }
 
-// GetInterpretation は特定のAI解釈を取得します（デモ実装）
+// GetInterpretation は特定のAI解釈を取得します
 func (h *InterpretationHandler) GetInterpretation(c *gin.Context) {
 	id := c.Param("id")
 
-	// デモ実装: 404を返す
-	c.JSON(http.StatusNotFound, api.ErrorResponse{
-		Code:    ptrString("not_found"),
-		Message: ptrString("Interpretation with id " + id + " not found"),
-	})
+	// データベースから取得
+	interpretation, err := h.interpretationRepo.GetInterpretationByID(c.Request.Context(), id)
+	if err != nil {
+		apperrors.RespondWithError(c, apperrors.ErrNotFound, "Interpretation with id "+id+" not found")
+		return
+	}
+
+	// APIレスポンス型に変換
+	interpretationIDUUID, _ := uuid.Parse(interpretation.ID)
+	userIDUUID, _ := uuid.Parse(interpretation.UserID)
+
+	apiInterp := buildAIInterpretation(
+		interpretationIDUUID,
+		userIDUUID,
+		interpretation.InputText,
+		&interpretation.Result,
+		interpretation.AIModel,
+		interpretation.CreatedAt,
+	)
+
+	c.JSON(http.StatusOK, apiInterp)
 }
 
-// determineType は入力テキストから簡単にタイプを判定します（デモ実装）
-func determineType(text string) api.InterpretationResponseType {
-	// 簡単なキーワードマッチング
-	keywords := map[string]api.InterpretationResponseType{
-		"買う":     api.InterpretationResponseTypeTodo,
-		"購入":     api.InterpretationResponseTypeTodo,
-		"やる":     api.InterpretationResponseTypeTodo,
-		"タスク":    api.InterpretationResponseTypeTodo,
-		"会議":     api.InterpretationResponseTypeEvent,
-		"ミーティング": api.InterpretationResponseTypeEvent,
-		"予定":     api.InterpretationResponseTypeEvent,
-		"イベント":   api.InterpretationResponseTypeEvent,
-		"思い出":    api.InterpretationResponseTypeReminder,
-		"リマインド":  api.InterpretationResponseTypeReminder,
-		"忘れない":   api.InterpretationResponseTypeReminder,
-		"メモ":     api.InterpretationResponseTypeNote,
-		"覚えて":    api.InterpretationResponseTypeNote,
-		"記録":     api.InterpretationResponseTypeNote,
-		"円":      api.InterpretationResponseTypeExpense,
-		"ドル":     api.InterpretationResponseTypeExpense,
-		"支払":     api.InterpretationResponseTypeExpense,
-		"経費":     api.InterpretationResponseTypeExpense,
+// buildAIInterpretation はAIInterpretation構造体を構築します
+func buildAIInterpretation(
+	id uuid.UUID,
+	userID uuid.UUID,
+	inputText string,
+	result *entity.InterpretationResult,
+	modelName string,
+	createdAt time.Time,
+) api.AIInterpretation {
+	structuredResult := struct {
+		Description *string `json:"description,omitempty"`
+		Metadata    *struct {
+			Deadline *time.Time                                              `json:"deadline,omitempty"`
+			Priority *api.AIInterpretationStructuredResultMetadataPriority `json:"priority,omitempty"`
+			Tags     *[]string                                               `json:"tags,omitempty"`
+		} `json:"metadata,omitempty"`
+		Title *string                                     `json:"title,omitempty"`
+		Type  *api.AIInterpretationStructuredResultType `json:"type,omitempty"`
+	}{
+		Title:       ptrString(result.Title),
+		Description: ptrStringIfNotEmpty(result.Description),
 	}
 
-	for keyword, typeVal := range keywords {
-		if containsKeyword(text, keyword) {
-			return typeVal
-		}
+	// Metadataの処理（Todoのみ）
+	metadata := &struct {
+		Deadline *time.Time                                              `json:"deadline,omitempty"`
+		Priority *api.AIInterpretationStructuredResultMetadataPriority `json:"priority,omitempty"`
+		Tags     *[]string                                               `json:"tags,omitempty"`
+	}{
+		Deadline: result.Metadata.Deadline,
 	}
 
-	return api.InterpretationResponseTypeUnknown
+	// タグの設定
+	if len(result.Metadata.Tags) > 0 {
+		metadata.Tags = &result.Metadata.Tags
+	}
+
+	// 優先度の変換
+	if result.Metadata.Priority != nil {
+		priority := api.AIInterpretationStructuredResultMetadataPriority(*result.Metadata.Priority)
+		metadata.Priority = &priority
+	}
+
+	structuredResult.Metadata = metadata
+
+	return api.AIInterpretation{
+		Id:                 openapi_types.UUID(id),
+		UserId:             openapi_types.UUID(userID),
+		InputText:          inputText,
+		StructuredResult:   structuredResult,
+		AiModel:            modelName,
+		AiPromptTokens:     ptrInt(len(inputText) / 4), // 概算
+		AiCompletionTokens: ptrInt(100),                // 概算
+		CreatedAt:          createdAt,
+	}
 }
 
-// containsKeyword はテキストにキーワードが含まれているかチェックします
-func containsKeyword(text, keyword string) bool {
-	// 簡易的な部分文字列マッチング
-	for i := 0; i <= len(text)-len(keyword); i++ {
-		if text[i:i+len(keyword)] == keyword {
-			return true
-		}
+// convertToResponseType はentityのタイプをAPIのタイプに変換します（現在はtodoのみ）
+func convertToResponseType(t entity.InterpretationType) api.InterpretationResponseType {
+	// 現在はtodoのみをサポート
+	return api.InterpretationResponseTypeTodo
+}
+
+// ptrStringIfNotEmpty は空でない場合のみstringのポインタを返すヘルパー関数
+func ptrStringIfNotEmpty(s string) *string {
+	if s == "" {
+		return nil
 	}
-	return false
+	return &s
 }
 
 // ptrString はstringのポインタを返すヘルパー関数

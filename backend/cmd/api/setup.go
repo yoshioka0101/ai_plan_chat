@@ -44,9 +44,27 @@ func initializeAuthHandler(db *sql.DB, config *config.Config) *handler.AuthHandl
 	return handler.NewAuthHandler(authUsecase, authService, authPresenter)
 }
 
-// initializeInterpretationHandler はInterpretationHandlerを初期化します（デモ版）
-func initializeInterpretationHandler() *handler.InterpretationHandler {
-	return handler.NewInterpretationHandler()
+// initializeGeminiService はGeminiServiceを初期化します
+func initializeGeminiService(config *config.Config) *service.GeminiService {
+	if config.AI.GeminiAPIKey == "" {
+		slog.Warn("Gemini API key is not set. AI features will not work.")
+		return nil
+	}
+
+	geminiService, err := service.NewGeminiService(config.AI.GeminiAPIKey, config.AI.GeminiModel)
+	if err != nil {
+		slog.Error("Failed to initialize Gemini service", "error", err)
+		return nil
+	}
+
+	slog.Info("Gemini service initialized successfully", "model", config.AI.GeminiModel)
+	return geminiService
+}
+
+// initializeInterpretationHandler はInterpretationHandlerを初期化します
+func initializeInterpretationHandler(db *sql.DB, logger *slog.Logger, geminiService *service.GeminiService) *handler.InterpretationHandler {
+	interpretationRepo := repository.NewInterpretationRepository(db, logger)
+	return handler.NewInterpretationHandler(geminiService, interpretationRepo)
 }
 
 // InitializeServer は全ての依存性注入を行い、Ginルーターを返します
@@ -55,11 +73,14 @@ func InitializeServer(db *sql.DB, config *config.Config) *gin.Engine {
 	// Logger初期化
 	logger := middleware.NewLogger()
 
+	// サービスを初期化
+	geminiService := initializeGeminiService(config)
+
 	// 各ハンドラーを初期化
 	healthHandler := initializeHealthHandler()
 	taskHandler := initializeTaskHandler(db, logger)
 	authHandler := initializeAuthHandler(db, config)
-	interpretationHandler := initializeInterpretationHandler()
+	interpretationHandler := initializeInterpretationHandler(db, logger, geminiService)
 
 	// 統合ハンドラーを作成
 	server := http.NewServer(healthHandler, taskHandler, authHandler, interpretationHandler)

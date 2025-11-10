@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/yoshioka0101/ai_plan_chat/gen/models"
+	"github.com/yoshioka0101/ai_plan_chat/internal/entity"
 )
 
 // TaskRepository はタスクのデータアクセスを提供します
@@ -25,4 +26,11 @@ type TaskUsecase interface {
 	UpdateTask(ctx context.Context, id string, title string, description *string, dueAt *time.Time, status string) (*models.Task, error)
 	EditTask(ctx context.Context, id string, title *string, description *string, dueAt *time.Time, status *string) (*models.Task, error)
 	DeleteTask(ctx context.Context, id string) error
+}
+
+// InterpretationRepository はAI解釈のデータアクセスを提供します
+type InterpretationRepository interface {
+	CreateInterpretation(ctx context.Context, interpretation *entity.AIInterpretation) error
+	GetInterpretationByID(ctx context.Context, id string) (*entity.AIInterpretation, error)
+	GetInterpretationsByUserID(ctx context.Context, userID string, limit, offset int) ([]*entity.AIInterpretation, error)
 }
