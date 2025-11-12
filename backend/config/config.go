@@ -44,8 +44,8 @@ type AuthConfig struct {
 
 // AIConfig AI設定
 type AIConfig struct {
-	GeminiAPIKey   string `json:"-"`
-	GeminiModel    string `json:"gemini_model"`
+	GeminiAPIKey string `json:"-"`
+	GeminiModel  string `json:"gemini_model"`
 }
 
 // Load 環境変数から設定を読み込む
@@ -143,9 +143,15 @@ func Load() *Config {
 	}
 
 	// Gemini Model
+	// GEMINI_MODEL または GEMINI_MODEL_NAME から読み込み（後方互換性のため両方サポート）
 	geminiModel := os.Getenv("GEMINI_MODEL")
 	if geminiModel == "" {
-		geminiModel = "gemini-1.5-flash" // デフォルト
+		geminiModel = os.Getenv("GEMINI_MODEL_NAME")
+	}
+	if geminiModel == "" {
+		// デフォルトモデル: Gemini 2.0 Flash (最新モデル)
+		geminiModel = "gemini-2.0-flash-exp"
+		log.Printf("GEMINI_MODEL not set, using default: %s", geminiModel)
 	}
 
 	config := &Config{

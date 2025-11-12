@@ -1,4 +1,4 @@
-type ViewMode = 'kanban' | 'list' | 'calendar';
+type ViewMode = 'kanban' | 'list' | 'calendar' | 'ai';
 
 interface SidebarProps {
   onNewTaskClick: () => void;
@@ -213,6 +213,31 @@ export const Sidebar = ({ onNewTaskClick, isOpen, onToggle, viewMode, onViewChan
               }}
             >
               📅 Calendar
+            </div>
+            <div
+              onClick={() => onViewChange('ai')}
+              style={{
+                padding: '12px 16px',
+                marginBottom: '8px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s',
+                backgroundColor: viewMode === 'ai' ? '#f3f4f6' : 'transparent',
+                fontWeight: viewMode === 'ai' ? '600' : '400',
+                color: viewMode === 'ai' ? '#1f2937' : '#6b7280',
+              }}
+              onMouseEnter={(e) => {
+                if (viewMode !== 'ai') {
+                  e.currentTarget.style.backgroundColor = '#f9fafb';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (viewMode !== 'ai') {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }
+              }}
+            >
+              🤖 AI Assistant
             </div>
           </div>
         </div>

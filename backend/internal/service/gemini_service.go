@@ -35,13 +35,14 @@ func init() {
 }
 
 // NewGeminiService は新しいGeminiServiceを作成します
+// modelNameは必須パラメータです。デフォルト値の設定はconfig層で行います。
 func NewGeminiService(apiKey string, modelName string) (*GeminiService, error) {
 	if apiKey == "" {
 		return nil, fmt.Errorf("Gemini API key is required")
 	}
 
 	if modelName == "" {
-		modelName = "gemini-1.5-flash" // デフォルト
+		return nil, fmt.Errorf("Gemini model name is required")
 	}
 
 	ctx := context.Background()
