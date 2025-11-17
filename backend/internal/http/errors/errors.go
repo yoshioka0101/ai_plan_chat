@@ -27,6 +27,12 @@ var (
 		HTTPStatus: http.StatusBadRequest,
 	}
 
+	ErrUnauthorized = &AppError{
+		Code:       "unauthorized",
+		Message:    "Authentication required",
+		HTTPStatus: http.StatusUnauthorized,
+	}
+
 	ErrConfigurationError = &AppError{
 		Code:       "configuration_error",
 		Message:    "Server configuration error",

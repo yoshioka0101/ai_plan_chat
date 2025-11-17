@@ -26,7 +26,7 @@ func NewServer(healthHandler *handler.HealthHandler, taskHandler *handler.TaskHa
 }
 
 // SetupRoutes はルーターをセットアップします
-func SetupRoutes(server *Server) *gin.Engine {
+func SetupRoutes(server *Server, authMiddleware *middleware.AuthMiddleware) *gin.Engine {
 	logger := middleware.NewLogger()
 
 	r := gin.New()
@@ -64,6 +64,7 @@ func SetupRoutes(server *Server) *gin.Engine {
 
 		// Interpretation endpoints
 		interpretations := v1.Group("/interpretations")
+		interpretations.Use(authMiddleware.RequireAuth())
 		{
 			interpretations.POST("", server.InterpretationHandler.CreateInterpretation)
 			interpretations.GET("", server.InterpretationHandler.ListInterpretations)

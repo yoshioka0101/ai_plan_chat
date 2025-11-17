@@ -25,14 +25,21 @@ const (
 
 // Defines values for AIInterpretationStructuredResultMetadataPriority.
 const (
-	High   AIInterpretationStructuredResultMetadataPriority = "high"
-	Low    AIInterpretationStructuredResultMetadataPriority = "low"
-	Medium AIInterpretationStructuredResultMetadataPriority = "medium"
+	AIInterpretationStructuredResultMetadataPriorityHigh   AIInterpretationStructuredResultMetadataPriority = "high"
+	AIInterpretationStructuredResultMetadataPriorityLow    AIInterpretationStructuredResultMetadataPriority = "low"
+	AIInterpretationStructuredResultMetadataPriorityMedium AIInterpretationStructuredResultMetadataPriority = "medium"
 )
 
 // Defines values for AIInterpretationStructuredResultType.
 const (
 	AIInterpretationStructuredResultTypeTodo AIInterpretationStructuredResultType = "todo"
+)
+
+// Defines values for CreateTaskRequestPriority.
+const (
+	CreateTaskRequestPriorityHigh   CreateTaskRequestPriority = "high"
+	CreateTaskRequestPriorityLow    CreateTaskRequestPriority = "low"
+	CreateTaskRequestPriorityMedium CreateTaskRequestPriority = "medium"
 )
 
 // Defines values for CreateTaskRequestStatus.
@@ -59,11 +66,25 @@ const (
 	InterpretationResponseTypeUnknown  InterpretationResponseType = "unknown"
 )
 
+// Defines values for TaskPriority.
+const (
+	TaskPriorityHigh   TaskPriority = "high"
+	TaskPriorityLow    TaskPriority = "low"
+	TaskPriorityMedium TaskPriority = "medium"
+)
+
 // Defines values for TaskStatus.
 const (
 	TaskStatusDone       TaskStatus = "done"
 	TaskStatusInProgress TaskStatus = "in_progress"
 	TaskStatusTodo       TaskStatus = "todo"
+)
+
+// Defines values for UpdateTaskRequestPriority.
+const (
+	UpdateTaskRequestPriorityHigh   UpdateTaskRequestPriority = "high"
+	UpdateTaskRequestPriorityLow    UpdateTaskRequestPriority = "low"
+	UpdateTaskRequestPriorityMedium UpdateTaskRequestPriority = "medium"
 )
 
 // Defines values for UpdateTaskRequestStatus.
@@ -158,12 +179,21 @@ type CreateTaskRequest struct {
 	// DueAt タスクの期限
 	DueAt *time.Time `json:"due_at"`
 
+	// InterpretationId このタスクを作成したAI解釈のID
+	InterpretationId *openapi_types.UUID `json:"interpretation_id"`
+
+	// Priority タスクの優先度
+	Priority *CreateTaskRequestPriority `json:"priority"`
+
 	// Status タスクの状態
 	Status *CreateTaskRequestStatus `json:"status,omitempty"`
 
 	// Title タスクのタイトル
 	Title string `json:"title"`
 }
+
+// CreateTaskRequestPriority タスクの優先度
+type CreateTaskRequestPriority string
 
 // CreateTaskRequestStatus タスクの状態
 type CreateTaskRequestStatus string
@@ -228,6 +258,12 @@ type Task struct {
 	// Id タスクID
 	Id openapi_types.UUID `json:"id"`
 
+	// InterpretationId このタスクを作成したAI解釈のID
+	InterpretationId *openapi_types.UUID `json:"interpretation_id"`
+
+	// Priority タスクの優先度
+	Priority *TaskPriority `json:"priority"`
+
 	// Status タスクの状態
 	Status TaskStatus `json:"status"`
 
@@ -237,6 +273,9 @@ type Task struct {
 	// UpdatedAt 更新日時
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
+// TaskPriority タスクの優先度
+type TaskPriority string
 
 // TaskStatus タスクの状態
 type TaskStatus string
@@ -249,12 +288,18 @@ type UpdateTaskRequest struct {
 	// DueAt タスクの期限
 	DueAt *time.Time `json:"due_at"`
 
+	// Priority タスクの優先度
+	Priority *UpdateTaskRequestPriority `json:"priority"`
+
 	// Status タスクの状態
 	Status UpdateTaskRequestStatus `json:"status"`
 
 	// Title タスクのタイトル
 	Title string `json:"title"`
 }
+
+// UpdateTaskRequestPriority タスクの優先度
+type UpdateTaskRequestPriority string
 
 // UpdateTaskRequestStatus タスクの状態
 type UpdateTaskRequestStatus string

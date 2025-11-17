@@ -51,9 +51,18 @@ func (h *InterpretationHandler) CreateInterpretation(c *gin.Context) {
 		return
 	}
 
-	// TODO: 実際のユーザーIDは認証トークンから取得する
-	// 現時点では仮のユーザーIDを使用
-	userID := uuid.New().String()
+	// 認証ミドルウェアから設定されたユーザーIDを取得
+	userIDValue, exists := c.Get("user_id")
+	if !exists {
+		apperrors.RespondWithError(c, apperrors.ErrUnauthorized, "User not authenticated")
+		return
+	}
+	userID, ok := userIDValue.(string)
+	if !ok {
+		apperrors.RespondWithError(c, apperrors.ErrInternalServer, "Invalid user ID format")
+		return
+	}
+
 	interpretationID := uuid.New().String()
 
 	// Entity型でデータベースに保存
@@ -98,9 +107,17 @@ func (h *InterpretationHandler) CreateInterpretation(c *gin.Context) {
 
 // ListInterpretations はAI解釈履歴を取得します
 func (h *InterpretationHandler) ListInterpretations(c *gin.Context) {
-	// TODO: 実際のユーザーIDは認証トークンから取得する
-	// 現時点では仮のユーザーIDを使用（全件取得のため適当なID）
-	userID := "00000000-0000-0000-0000-000000000000"
+	// 認証ミドルウェアから設定されたユーザーIDを取得
+	userIDValue, exists := c.Get("user_id")
+	if !exists {
+		apperrors.RespondWithError(c, apperrors.ErrUnauthorized, "User not authenticated")
+		return
+	}
+	userID, ok := userIDValue.(string)
+	if !ok {
+		apperrors.RespondWithError(c, apperrors.ErrInternalServer, "Invalid user ID format")
+		return
+	}
 
 	limit := 20
 	offset := 0

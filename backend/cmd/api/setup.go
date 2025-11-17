@@ -30,7 +30,7 @@ func initializeTaskHandler(db *sql.DB, logger *slog.Logger) *handler.TaskHandler
 }
 
 // initializeAuthHandler はAuthHandlerとその依存関係を初期化します
-func initializeAuthHandler(db *sql.DB, config *config.Config) *handler.AuthHandler {
+func initializeAuthHandler(db *sql.DB, config *config.Config) (*handler.AuthHandler, service.AuthService) {
 	// Repository → Usecase → Service → Presenter → Handler
 	userRepo := repository.NewUserRepository(db)
 	authUsecase := usecase.NewAuthUsecase(userRepo)
@@ -41,7 +41,8 @@ func initializeAuthHandler(db *sql.DB, config *config.Config) *handler.AuthHandl
 		config.Auth.GoogleRedirectURL,
 	)
 	authPresenter := presenter.NewAuthPresenter()
-	return handler.NewAuthHandler(authUsecase, authService, authPresenter)
+	authHandler := handler.NewAuthHandler(authUsecase, authService, authPresenter)
+	return authHandler, authService
 }
 
 // initializeGeminiService はGeminiServiceを初期化します
@@ -79,12 +80,15 @@ func InitializeServer(db *sql.DB, config *config.Config) *gin.Engine {
 	// 各ハンドラーを初期化
 	healthHandler := initializeHealthHandler()
 	taskHandler := initializeTaskHandler(db, logger)
-	authHandler := initializeAuthHandler(db, config)
+	authHandler, authService := initializeAuthHandler(db, config)
 	interpretationHandler := initializeInterpretationHandler(db, logger, geminiService)
+
+	// 認証ミドルウェアを初期化
+	authMiddleware := middleware.NewAuthMiddleware(authService)
 
 	// 統合ハンドラーを作成
 	server := http.NewServer(healthHandler, taskHandler, authHandler, interpretationHandler)
 
 	// ルーターをセットアップ（OpenAPI仕様に基づく）
-	return http.SetupRoutes(server)
+	return http.SetupRoutes(server, authMiddleware)
 }

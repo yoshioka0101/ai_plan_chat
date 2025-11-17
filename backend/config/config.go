@@ -149,8 +149,8 @@ func Load() *Config {
 		geminiModel = os.Getenv("GEMINI_MODEL_NAME")
 	}
 	if geminiModel == "" {
-		// デフォルトモデル: Gemini 2.0 Flash (最新モデル)
-		geminiModel = "gemini-2.0-flash-exp"
+		// デフォルトモデル: Gemini 2.5 Flash-Lite (最も軽量で安価なモデル)
+		geminiModel = "gemini-2.5-flash-lite"
 		log.Printf("GEMINI_MODEL not set, using default: %s", geminiModel)
 	}
 
