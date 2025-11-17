@@ -18,7 +18,7 @@ import (
 	googleoauth2 "google.golang.org/api/oauth2/v2"
 	"google.golang.org/api/option"
 
-	"github.com/yoshioka0101/ai_plan_chat/models"
+	"github.com/yoshioka0101/ai_plan_chat/gen/models"
 )
 
 var (

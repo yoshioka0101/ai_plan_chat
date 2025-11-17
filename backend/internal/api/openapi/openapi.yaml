@@ -15,8 +15,6 @@ paths:
     $ref: './paths/tasks_id.yaml'
   /auth/google/callback:
     $ref: './paths/auth_google_callback.yaml'
-  /chat:
-    $ref: './paths/chat.yaml'
   /interpretations:
     $ref: './paths/interpretations.yaml'
   /interpretations/{id}:
@@ -42,15 +40,11 @@ components:
       $ref: './components/schemas/ErrorResponse.yaml'
     User:
       $ref: './components/schemas/User.yaml'
-    LoginRequest:
-      $ref: './components/schemas/LoginRequest.yaml'
-    SignupRequest:
-      $ref: './components/schemas/SignupRequest.yaml'
     AuthResponse:
       $ref: './components/schemas/AuthResponse.yaml'
-    ChatRequest:
-      $ref: './components/schemas/ChatRequest.yaml'
-    ChatResponse:
-      $ref: './components/schemas/ChatResponse.yaml'
+    CreateInterpretationRequest:
+      $ref: './components/schemas/CreateInterpretationRequest.yaml'
+    InterpretationResponse:
+      $ref: './components/schemas/InterpretationResponse.yaml'
     AIInterpretation:
       $ref: './components/schemas/AIInterpretation.yaml'

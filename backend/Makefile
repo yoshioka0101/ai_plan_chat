@@ -70,7 +70,7 @@ fmt:
 # アプリケーションのビルド
 build:
 	@echo "アプリケーションをビルドしています"
-	go build -o bin/api cmd/api/main.go
+	go build -o bin/api ./cmd/api
 	@echo "ビルドが完了しました: bin/api"
 
 .PHONY: redocly-bundle

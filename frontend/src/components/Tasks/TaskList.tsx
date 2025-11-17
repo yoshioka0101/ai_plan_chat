@@ -4,12 +4,13 @@ import { useAuth } from '../../hooks/useAuth';
 import { KanbanColumn } from './KanbanColumn';
 import { ListView } from './ListView';
 import { CalendarView } from './CalendarView';
+import { AIView } from './AIView';
 import { Sidebar } from '../Sidebar/Sidebar';
 import { Modal } from '../Modal/Modal';
 import { TaskForm } from './TaskForm';
 import type { Task, CreateTaskRequest } from '../../types/task';
 
-type ViewMode = 'kanban' | 'list' | 'calendar';
+type ViewMode = 'kanban' | 'list' | 'calendar' | 'ai';
 
 export const TaskList = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -289,12 +290,16 @@ export const TaskList = () => {
             onNewTaskClick={() => setShowForm(true)}
             onUpdate={handleInlineUpdate}
           />
-        ) : (
+        ) : viewMode === 'calendar' ? (
           <CalendarView
             tasks={tasks}
             onEdit={handleEdit}
             onDelete={handleDeleteTask}
             onStatusChange={handleStatusChange}
+            onNewTaskClick={() => setShowForm(true)}
+          />
+        ) : (
+          <AIView
             onNewTaskClick={() => setShowForm(true)}
           />
         )}

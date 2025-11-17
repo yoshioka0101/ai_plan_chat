@@ -4,7 +4,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/oapi-codegen/runtime/types"
 	"github.com/yoshioka0101/ai_plan_chat/gen/api"
-	"github.com/yoshioka0101/ai_plan_chat/models"
+	"github.com/yoshioka0101/ai_plan_chat/gen/models"
 )
 
 // AuthPresenter は認証のレスポンス整形を担当します

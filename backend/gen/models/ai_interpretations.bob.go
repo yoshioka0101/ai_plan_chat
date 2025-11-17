@@ -10,6 +10,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/aarondl/opt/null"
 	"github.com/aarondl/opt/omit"
 	"github.com/aarondl/opt/omitnull"
 	"github.com/stephenafamo/bob"
@@ -26,17 +27,21 @@ import (
 
 // AiInterpretation is an object representing the database table.
 type AiInterpretation struct {
-	// AI解釈ID (UUID)
+	// AIè§£é‡ˆID (UUID)
 	ID string `db:"id,pk" `
-	// ユーザーID
+	// ãƒ¦ãƒ¼ã‚¶ãƒ¼ID
 	UserID string `db:"user_id" `
-	// ユーザーが入力した自然言語テキスト
+	// ãƒ¦ãƒ¼ã‚¶ãƒ¼ãŒå…¥åŠ›ã—ãŸè‡ªç„¶è¨€èªžãƒ†ã‚­ã‚¹ãƒˆ
 	InputText string `db:"input_text" `
-	// AI解析結果のJSON構造
+	// AIè§£æžçµæžœã®JSONæ§‹é€
 	StructuredResult types.JSON[json.RawMessage] `db:"structured_result" `
-	// 使用AIモデル名
+	// ä½¿ç”¨AIãƒ¢ãƒ‡ãƒ«å
 	AiModel string `db:"ai_model" `
-	// 解析実行日時
+	// å…¥åŠ›ãƒˆãƒ¼ã‚¯ãƒ³æ•°
+	AiPromptTokens null.Val[int32] `db:"ai_prompt_tokens" `
+	// å‡ºåŠ›ãƒˆãƒ¼ã‚¯ãƒ³æ•°
+	AiCompletionTokens null.Val[int32] `db:"ai_completion_tokens" `
+	// è§£æžå®Ÿè¡Œæ—¥æ™‚
 	CreatedAt time.Time `db:"created_at" `
 
 	R aiInterpretationR `db:"-" `
@@ -61,27 +66,31 @@ type aiInterpretationR struct {
 func buildAiInterpretationColumns(alias string) aiInterpretationColumns {
 	return aiInterpretationColumns{
 		ColumnsExpr: expr.NewColumnsExpr(
-			"id", "user_id", "input_text", "structured_result", "ai_model", "created_at",
+			"id", "user_id", "input_text", "structured_result", "ai_model", "ai_prompt_tokens", "ai_completion_tokens", "created_at",
 		).WithParent("ai_interpretations"),
-		tableAlias:       alias,
-		ID:               mysql.Quote(alias, "id"),
-		UserID:           mysql.Quote(alias, "user_id"),
-		InputText:        mysql.Quote(alias, "input_text"),
-		StructuredResult: mysql.Quote(alias, "structured_result"),
-		AiModel:          mysql.Quote(alias, "ai_model"),
-		CreatedAt:        mysql.Quote(alias, "created_at"),
+		tableAlias:         alias,
+		ID:                 mysql.Quote(alias, "id"),
+		UserID:             mysql.Quote(alias, "user_id"),
+		InputText:          mysql.Quote(alias, "input_text"),
+		StructuredResult:   mysql.Quote(alias, "structured_result"),
+		AiModel:            mysql.Quote(alias, "ai_model"),
+		AiPromptTokens:     mysql.Quote(alias, "ai_prompt_tokens"),
+		AiCompletionTokens: mysql.Quote(alias, "ai_completion_tokens"),
+		CreatedAt:          mysql.Quote(alias, "created_at"),
 	}
 }
 
 type aiInterpretationColumns struct {
 	expr.ColumnsExpr
-	tableAlias       string
-	ID               mysql.Expression
-	UserID           mysql.Expression
-	InputText        mysql.Expression
-	StructuredResult mysql.Expression
-	AiModel          mysql.Expression
-	CreatedAt        mysql.Expression
+	tableAlias         string
+	ID                 mysql.Expression
+	UserID             mysql.Expression
+	InputText          mysql.Expression
+	StructuredResult   mysql.Expression
+	AiModel            mysql.Expression
+	AiPromptTokens     mysql.Expression
+	AiCompletionTokens mysql.Expression
+	CreatedAt          mysql.Expression
 }
 
 func (c aiInterpretationColumns) Alias() string {
@@ -96,16 +105,18 @@ func (aiInterpretationColumns) AliasedAs(alias string) aiInterpretationColumns {
 // All values are optional, and do not have to be set
 // Generated columns are not included
 type AiInterpretationSetter struct {
-	ID               omit.Val[string]                      `db:"id,pk" `
-	UserID           omit.Val[string]                      `db:"user_id" `
-	InputText        omit.Val[string]                      `db:"input_text" `
-	StructuredResult omit.Val[types.JSON[json.RawMessage]] `db:"structured_result" `
-	AiModel          omit.Val[string]                      `db:"ai_model" `
-	CreatedAt        omit.Val[time.Time]                   `db:"created_at" `
+	ID                 omit.Val[string]                      `db:"id,pk" `
+	UserID             omit.Val[string]                      `db:"user_id" `
+	InputText          omit.Val[string]                      `db:"input_text" `
+	StructuredResult   omit.Val[types.JSON[json.RawMessage]] `db:"structured_result" `
+	AiModel            omit.Val[string]                      `db:"ai_model" `
+	AiPromptTokens     omitnull.Val[int32]                   `db:"ai_prompt_tokens" `
+	AiCompletionTokens omitnull.Val[int32]                   `db:"ai_completion_tokens" `
+	CreatedAt          omit.Val[time.Time]                   `db:"created_at" `
 }
 
 func (s AiInterpretationSetter) SetColumns() []string {
-	vals := make([]string, 0, 6)
+	vals := make([]string, 0, 8)
 	if s.ID.IsValue() {
 		vals = append(vals, "id")
 	}
@@ -120,6 +131,12 @@ func (s AiInterpretationSetter) SetColumns() []string {
 	}
 	if s.AiModel.IsValue() {
 		vals = append(vals, "ai_model")
+	}
+	if !s.AiPromptTokens.IsUnset() {
+		vals = append(vals, "ai_prompt_tokens")
+	}
+	if !s.AiCompletionTokens.IsUnset() {
+		vals = append(vals, "ai_completion_tokens")
 	}
 	if s.CreatedAt.IsValue() {
 		vals = append(vals, "created_at")
@@ -142,6 +159,12 @@ func (s AiInterpretationSetter) Overwrite(t *AiInterpretation) {
 	}
 	if s.AiModel.IsValue() {
 		t.AiModel = s.AiModel.MustGet()
+	}
+	if !s.AiPromptTokens.IsUnset() {
+		t.AiPromptTokens = s.AiPromptTokens.MustGetNull()
+	}
+	if !s.AiCompletionTokens.IsUnset() {
+		t.AiCompletionTokens = s.AiCompletionTokens.MustGetNull()
 	}
 	if s.CreatedAt.IsValue() {
 		t.CreatedAt = s.CreatedAt.MustGet()
@@ -180,6 +203,16 @@ func (s *AiInterpretationSetter) Apply(q *dialect.InsertQuery) {
 			}
 			return mysql.Arg(s.AiModel.MustGet()).WriteSQL(ctx, w, d, start)
 		}), bob.ExpressionFunc(func(ctx context.Context, w io.Writer, d bob.Dialect, start int) ([]any, error) {
+			if !(!s.AiPromptTokens.IsUnset()) {
+				return mysql.Raw("DEFAULT").WriteSQL(ctx, w, d, start)
+			}
+			return mysql.Arg(s.AiPromptTokens.MustGetNull()).WriteSQL(ctx, w, d, start)
+		}), bob.ExpressionFunc(func(ctx context.Context, w io.Writer, d bob.Dialect, start int) ([]any, error) {
+			if !(!s.AiCompletionTokens.IsUnset()) {
+				return mysql.Raw("DEFAULT").WriteSQL(ctx, w, d, start)
+			}
+			return mysql.Arg(s.AiCompletionTokens.MustGetNull()).WriteSQL(ctx, w, d, start)
+		}), bob.ExpressionFunc(func(ctx context.Context, w io.Writer, d bob.Dialect, start int) ([]any, error) {
 			if !(s.CreatedAt.IsValue()) {
 				return mysql.Raw("DEFAULT").WriteSQL(ctx, w, d, start)
 			}
@@ -192,7 +225,7 @@ func (s AiInterpretationSetter) UpdateMod() bob.Mod[*dialect.UpdateQuery] {
 }
 
 func (s AiInterpretationSetter) Expressions(prefix ...string) []bob.Expression {
-	exprs := make([]bob.Expression, 0, 6)
+	exprs := make([]bob.Expression, 0, 8)
 
 	if s.ID.IsValue() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
@@ -226,6 +259,20 @@ func (s AiInterpretationSetter) Expressions(prefix ...string) []bob.Expression {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			mysql.Quote(append(prefix, "ai_model")...),
 			mysql.Arg(s.AiModel),
+		}})
+	}
+
+	if !s.AiPromptTokens.IsUnset() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			mysql.Quote(append(prefix, "ai_prompt_tokens")...),
+			mysql.Arg(s.AiPromptTokens),
+		}})
+	}
+
+	if !s.AiCompletionTokens.IsUnset() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			mysql.Quote(append(prefix, "ai_completion_tokens")...),
+			mysql.Arg(s.AiCompletionTokens),
 		}})
 	}
 
@@ -617,12 +664,14 @@ func (aiInterpretation0 *AiInterpretation) AttachTasks(ctx context.Context, exec
 }
 
 type aiInterpretationWhere[Q mysql.Filterable] struct {
-	ID               mysql.WhereMod[Q, string]
-	UserID           mysql.WhereMod[Q, string]
-	InputText        mysql.WhereMod[Q, string]
-	StructuredResult mysql.WhereMod[Q, types.JSON[json.RawMessage]]
-	AiModel          mysql.WhereMod[Q, string]
-	CreatedAt        mysql.WhereMod[Q, time.Time]
+	ID                 mysql.WhereMod[Q, string]
+	UserID             mysql.WhereMod[Q, string]
+	InputText          mysql.WhereMod[Q, string]
+	StructuredResult   mysql.WhereMod[Q, types.JSON[json.RawMessage]]
+	AiModel            mysql.WhereMod[Q, string]
+	AiPromptTokens     mysql.WhereNullMod[Q, int32]
+	AiCompletionTokens mysql.WhereNullMod[Q, int32]
+	CreatedAt          mysql.WhereMod[Q, time.Time]
 }
 
 func (aiInterpretationWhere[Q]) AliasedAs(alias string) aiInterpretationWhere[Q] {
@@ -631,12 +680,14 @@ func (aiInterpretationWhere[Q]) AliasedAs(alias string) aiInterpretationWhere[Q]
 
 func buildAiInterpretationWhere[Q mysql.Filterable](cols aiInterpretationColumns) aiInterpretationWhere[Q] {
 	return aiInterpretationWhere[Q]{
-		ID:               mysql.Where[Q, string](cols.ID),
-		UserID:           mysql.Where[Q, string](cols.UserID),
-		InputText:        mysql.Where[Q, string](cols.InputText),
-		StructuredResult: mysql.Where[Q, types.JSON[json.RawMessage]](cols.StructuredResult),
-		AiModel:          mysql.Where[Q, string](cols.AiModel),
-		CreatedAt:        mysql.Where[Q, time.Time](cols.CreatedAt),
+		ID:                 mysql.Where[Q, string](cols.ID),
+		UserID:             mysql.Where[Q, string](cols.UserID),
+		InputText:          mysql.Where[Q, string](cols.InputText),
+		StructuredResult:   mysql.Where[Q, types.JSON[json.RawMessage]](cols.StructuredResult),
+		AiModel:            mysql.Where[Q, string](cols.AiModel),
+		AiPromptTokens:     mysql.WhereNull[Q, int32](cols.AiPromptTokens),
+		AiCompletionTokens: mysql.WhereNull[Q, int32](cols.AiCompletionTokens),
+		CreatedAt:          mysql.Where[Q, time.Time](cols.CreatedAt),
 	}
 }
 

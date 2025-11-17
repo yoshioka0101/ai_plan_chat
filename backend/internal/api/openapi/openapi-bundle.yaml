@@ -227,11 +227,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /chat:
+  /interpretations:
     post:
-      summary: InterpretAndCreate
-      description: 自然言語入力によるAI解析とタスク/イベント登録
-      operationId: interpretAndCreate
+      summary: CreateInterpretation
+      description: 自然言語入力によるAI解析
+      operationId: createInterpretation
       security:
         - BearerAuth: []
       requestBody:
@@ -239,14 +239,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ChatRequest'
+              $ref: '#/components/schemas/CreateInterpretationRequest'
       responses:
         '200':
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChatResponse'
+                $ref: '#/components/schemas/InterpretationResponse'
         '400':
           description: Bad Request
           content:
@@ -271,7 +271,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /interpretations:
     get:
       summary: ListInterpretations
       description: AI解析履歴の取得
@@ -285,8 +284,11 @@ paths:
           schema:
             type: string
             enum:
-              - task
+              - todo
               - event
+              - reminder
+              - note
+              - expense
               - unknown
         - name: limit
           in: query
@@ -420,6 +422,19 @@ components:
             - todo
             - in_progress
             - done
+        priority:
+          type: string
+          description: タスクの優先度
+          enum:
+            - low
+            - medium
+            - high
+          nullable: true
+        interpretation_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: このタスクを作成したAI解釈のID
         created_at:
           type: string
           format: date-time
@@ -459,6 +474,19 @@ components:
             - in_progress
             - done
           default: todo
+        priority:
+          type: string
+          description: タスクの優先度
+          enum:
+            - low
+            - medium
+            - high
+          nullable: true
+        interpretation_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: このタスクを作成したAI解釈のID
       required:
         - title
     UpdateTaskRequest:
@@ -485,6 +513,14 @@ components:
             - todo
             - in_progress
             - done
+        priority:
+          type: string
+          description: タスクの優先度
+          enum:
+            - low
+            - medium
+            - high
+          nullable: true
       required:
         - title
         - status
@@ -554,7 +590,7 @@ components:
       required:
         - jwt_token
         - user
-    ChatRequest:
+    CreateInterpretationRequest:
       type: object
       properties:
         input_text:
@@ -564,29 +600,29 @@ components:
           description: 自然言語テキスト
       required:
         - input_text
-    ChatResponse:
+    InterpretationResponse:
       type: object
       properties:
         type:
           type: string
           enum:
-            - task
+            - todo
+            - event
+            - reminder
+            - note
+            - expense
             - unknown
           description: 解析結果のタイプ
-        task:
-          $ref: '#/components/schemas/Task'
-          nullable: true
+        interpretation:
+          $ref: '#/components/schemas/AIInterpretation'
+          description: AI解釈結果
         message:
           type: string
           nullable: true
           description: type=unknownの場合のメッセージ
-        interpretation_id:
-          type: string
-          format: uuid
-          description: AI解釈ID
       required:
         - type
-        - interpretation_id
+        - interpretation
     AIInterpretation:
       type: object
       properties:
@@ -608,25 +644,58 @@ components:
             type:
               type: string
               enum:
-                - task
-                - event
-                - unknown
+                - todo
+              description: アイテムタイプ（現在はtodoのみサポート）
             title:
               type: string
+              description: タイトル
             description:
               type: string
-            due_at:
-              type: string
-              format: date-time
-            starts_at:
-              type: string
-              format: date-time
-            ends_at:
-              type: string
-              format: date-time
+              description: 説明
+            metadata:
+              type: object
+              description: Todoのメタデータ
+              properties:
+                deadline:
+                  type: string
+                  format: date-time
+                  description: 期限
+                priority:
+                  type: string
+                  enum:
+                    - low
+                    - medium
+                    - high
+                  description: 優先度
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  description: タグ
+          examples:
+            - type: todo
+              title: 大根を買う
+              description: スーパーで購入
+              metadata:
+                deadline: '2025-01-15T00:00:00Z'
+                priority: high
+                tags:
+                  - 買い物
+                  - 食材
+            - type: todo
+              title: 歯医者の予約確認
+              metadata:
+                deadline: '2025-01-18T10:00:00Z'
+                priority: medium
         ai_model:
           type: string
           description: 使用AIモデル
+        ai_prompt_tokens:
+          type: integer
+          description: 入力トークン数
+        ai_completion_tokens:
+          type: integer
+          description: 出力トークン数
         created_at:
           type: string
           format: date-time

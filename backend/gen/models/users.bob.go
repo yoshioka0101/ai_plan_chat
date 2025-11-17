@@ -25,19 +25,19 @@ import (
 
 // User is an object representing the database table.
 type User struct {
-	// ユーザーID (UUID)
+	// ãƒ¦ãƒ¼ã‚¶ãƒ¼ID (UUID)
 	ID string `db:"id,pk" `
-	// GoogleユーザーID
+	// Googleãƒ¦ãƒ¼ã‚¶ãƒ¼ID
 	GoogleID string `db:"google_id" `
-	// メールアドレス
+	// ãƒ¡ãƒ¼ãƒ«ã‚¢ãƒ‰ãƒ¬ã‚¹
 	Email string `db:"email" `
-	// ニックネーム/表示名
+	// ãƒ‹ãƒƒã‚¯ãƒãƒ¼ãƒ /è¡¨ç¤ºå
 	Nickname string `db:"nickname" `
-	// アバター画像URL
+	// ã‚¢ãƒã‚¿ãƒ¼ç”»åƒURL
 	Avatar null.Val[string] `db:"avatar" `
-	// 作成日時
+	// ä½œæˆæ—¥æ™‚
 	CreatedAt time.Time `db:"created_at" `
-	// 更新日時
+	// æ›´æ–°æ—¥æ™‚
 	UpdatedAt time.Time `db:"updated_at" `
 
 	R userR `db:"-" `

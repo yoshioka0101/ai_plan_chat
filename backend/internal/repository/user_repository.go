@@ -14,7 +14,7 @@ import (
 	"github.com/stephenafamo/bob/dialect/mysql"
 	"github.com/stephenafamo/bob/dialect/mysql/sm"
 	"github.com/stephenafamo/bob/dialect/mysql/um"
-	"github.com/yoshioka0101/ai_plan_chat/models"
+	"github.com/yoshioka0101/ai_plan_chat/gen/models"
 )
 
 // UserRepository はユーザーリポジトリのインターフェースです
