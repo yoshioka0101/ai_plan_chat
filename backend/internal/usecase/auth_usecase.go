@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/yoshioka0101/ai_plan_chat/internal/repository"
-	"github.com/yoshioka0101/ai_plan_chat/models"
+	"github.com/yoshioka0101/ai_plan_chat/gen/models"
 )
 
 // AuthUsecase は認証ユースケースのインターフェースです

@@ -20,5 +20,15 @@ properties:
     description: タスクの状態
     enum: ['todo', 'in_progress', 'done']
     default: 'todo'
+  priority:
+    type: string
+    description: タスクの優先度
+    enum: ['low', 'medium', 'high']
+    nullable: true
+  interpretation_id:
+    type: string
+    format: uuid
+    nullable: true
+    description: このタスクを作成したAI解釈のID
 required:
   - title

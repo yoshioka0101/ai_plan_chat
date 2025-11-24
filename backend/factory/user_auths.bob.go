@@ -13,7 +13,7 @@ import (
 	"github.com/aarondl/opt/omitnull"
 	"github.com/jaswdr/faker/v2"
 	"github.com/stephenafamo/bob"
-	models "github.com/yoshioka0101/ai_plan_chat/models"
+	models "github.com/yoshioka0101/ai_plan_chat/gen/models"
 )
 
 type UserAuthMod interface {

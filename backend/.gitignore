@@ -24,6 +24,8 @@ internal/gen/
 
 # Environment variables
 .env
+.env.bak
+.env.*
 .env.local
 .env.development
 .env.test

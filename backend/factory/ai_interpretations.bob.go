@@ -11,10 +11,11 @@ import (
 
 	"github.com/aarondl/opt/null"
 	"github.com/aarondl/opt/omit"
+	"github.com/aarondl/opt/omitnull"
 	"github.com/jaswdr/faker/v2"
 	"github.com/stephenafamo/bob"
 	"github.com/stephenafamo/bob/types"
-	models "github.com/yoshioka0101/ai_plan_chat/models"
+	models "github.com/yoshioka0101/ai_plan_chat/gen/models"
 )
 
 type AiInterpretationMod interface {
@@ -38,12 +39,14 @@ func (mods AiInterpretationModSlice) Apply(ctx context.Context, n *AiInterpretat
 // AiInterpretationTemplate is an object representing the database table.
 // all columns are optional and should be set by mods
 type AiInterpretationTemplate struct {
-	ID               func() string
-	UserID           func() string
-	InputText        func() string
-	StructuredResult func() types.JSON[json.RawMessage]
-	AiModel          func() string
-	CreatedAt        func() time.Time
+	ID                 func() string
+	UserID             func() string
+	InputText          func() string
+	StructuredResult   func() types.JSON[json.RawMessage]
+	AiModel            func() string
+	AiPromptTokens     func() null.Val[int32]
+	AiCompletionTokens func() null.Val[int32]
+	CreatedAt          func() time.Time
 
 	r aiInterpretationR
 	f *Factory
@@ -120,6 +123,14 @@ func (o AiInterpretationTemplate) BuildSetter() *models.AiInterpretationSetter {
 		val := o.AiModel()
 		m.AiModel = omit.From(val)
 	}
+	if o.AiPromptTokens != nil {
+		val := o.AiPromptTokens()
+		m.AiPromptTokens = omitnull.FromNull(val)
+	}
+	if o.AiCompletionTokens != nil {
+		val := o.AiCompletionTokens()
+		m.AiCompletionTokens = omitnull.FromNull(val)
+	}
 	if o.CreatedAt != nil {
 		val := o.CreatedAt()
 		m.CreatedAt = omit.From(val)
@@ -160,6 +171,12 @@ func (o AiInterpretationTemplate) Build() *models.AiInterpretation {
 	}
 	if o.AiModel != nil {
 		m.AiModel = o.AiModel()
+	}
+	if o.AiPromptTokens != nil {
+		m.AiPromptTokens = o.AiPromptTokens()
+	}
+	if o.AiCompletionTokens != nil {
+		m.AiCompletionTokens = o.AiCompletionTokens()
 	}
 	if o.CreatedAt != nil {
 		m.CreatedAt = o.CreatedAt()
@@ -344,6 +361,8 @@ func (m aiInterpretationMods) RandomizeAllColumns(f *faker.Faker) AiInterpretati
 		AiInterpretationMods.RandomInputText(f),
 		AiInterpretationMods.RandomStructuredResult(f),
 		AiInterpretationMods.RandomAiModel(f),
+		AiInterpretationMods.RandomAiPromptTokens(f),
+		AiInterpretationMods.RandomAiCompletionTokens(f),
 		AiInterpretationMods.RandomCreatedAt(f),
 	}
 }
@@ -499,6 +518,112 @@ func (m aiInterpretationMods) RandomAiModel(f *faker.Faker) AiInterpretationMod 
 	return AiInterpretationModFunc(func(_ context.Context, o *AiInterpretationTemplate) {
 		o.AiModel = func() string {
 			return random_string(f, "100")
+		}
+	})
+}
+
+// Set the model columns to this value
+func (m aiInterpretationMods) AiPromptTokens(val null.Val[int32]) AiInterpretationMod {
+	return AiInterpretationModFunc(func(_ context.Context, o *AiInterpretationTemplate) {
+		o.AiPromptTokens = func() null.Val[int32] { return val }
+	})
+}
+
+// Set the Column from the function
+func (m aiInterpretationMods) AiPromptTokensFunc(f func() null.Val[int32]) AiInterpretationMod {
+	return AiInterpretationModFunc(func(_ context.Context, o *AiInterpretationTemplate) {
+		o.AiPromptTokens = f
+	})
+}
+
+// Clear any values for the column
+func (m aiInterpretationMods) UnsetAiPromptTokens() AiInterpretationMod {
+	return AiInterpretationModFunc(func(_ context.Context, o *AiInterpretationTemplate) {
+		o.AiPromptTokens = nil
+	})
+}
+
+// Generates a random value for the column using the given faker
+// if faker is nil, a default faker is used
+// The generated value is sometimes null
+func (m aiInterpretationMods) RandomAiPromptTokens(f *faker.Faker) AiInterpretationMod {
+	return AiInterpretationModFunc(func(_ context.Context, o *AiInterpretationTemplate) {
+		o.AiPromptTokens = func() null.Val[int32] {
+			if f == nil {
+				f = &defaultFaker
+			}
+
+			val := random_int32(f)
+			return null.From(val)
+		}
+	})
+}
+
+// Generates a random value for the column using the given faker
+// if faker is nil, a default faker is used
+// The generated value is never null
+func (m aiInterpretationMods) RandomAiPromptTokensNotNull(f *faker.Faker) AiInterpretationMod {
+	return AiInterpretationModFunc(func(_ context.Context, o *AiInterpretationTemplate) {
+		o.AiPromptTokens = func() null.Val[int32] {
+			if f == nil {
+				f = &defaultFaker
+			}
+
+			val := random_int32(f)
+			return null.From(val)
+		}
+	})
+}
+
+// Set the model columns to this value
+func (m aiInterpretationMods) AiCompletionTokens(val null.Val[int32]) AiInterpretationMod {
+	return AiInterpretationModFunc(func(_ context.Context, o *AiInterpretationTemplate) {
+		o.AiCompletionTokens = func() null.Val[int32] { return val }
+	})
+}
+
+// Set the Column from the function
+func (m aiInterpretationMods) AiCompletionTokensFunc(f func() null.Val[int32]) AiInterpretationMod {
+	return AiInterpretationModFunc(func(_ context.Context, o *AiInterpretationTemplate) {
+		o.AiCompletionTokens = f
+	})
+}
+
+// Clear any values for the column
+func (m aiInterpretationMods) UnsetAiCompletionTokens() AiInterpretationMod {
+	return AiInterpretationModFunc(func(_ context.Context, o *AiInterpretationTemplate) {
+		o.AiCompletionTokens = nil
+	})
+}
+
+// Generates a random value for the column using the given faker
+// if faker is nil, a default faker is used
+// The generated value is sometimes null
+func (m aiInterpretationMods) RandomAiCompletionTokens(f *faker.Faker) AiInterpretationMod {
+	return AiInterpretationModFunc(func(_ context.Context, o *AiInterpretationTemplate) {
+		o.AiCompletionTokens = func() null.Val[int32] {
+			if f == nil {
+				f = &defaultFaker
+			}
+
+			val := random_int32(f)
+			return null.From(val)
+		}
+	})
+}
+
+// Generates a random value for the column using the given faker
+// if faker is nil, a default faker is used
+// The generated value is never null
+func (m aiInterpretationMods) RandomAiCompletionTokensNotNull(f *faker.Faker) AiInterpretationMod {
+	return AiInterpretationModFunc(func(_ context.Context, o *AiInterpretationTemplate) {
+		o.AiCompletionTokens = func() null.Val[int32] {
+			if f == nil {
+				f = &defaultFaker
+			}
+
+			val := random_int32(f)
+			return null.From(val)
 		}
 	})
 }

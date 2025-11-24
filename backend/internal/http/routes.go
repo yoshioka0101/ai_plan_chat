@@ -12,19 +12,21 @@ type Server struct {
 	*handler.HealthHandler
 	*handler.TaskHandler
 	*handler.AuthHandler
+	*handler.InterpretationHandler
 }
 
 // NewServer は統合ハンドラーを作成します
-func NewServer(healthHandler *handler.HealthHandler, taskHandler *handler.TaskHandler, authHandler *handler.AuthHandler) *Server {
+func NewServer(healthHandler *handler.HealthHandler, taskHandler *handler.TaskHandler, authHandler *handler.AuthHandler, interpretationHandler *handler.InterpretationHandler) *Server {
 	return &Server{
-		HealthHandler: healthHandler,
-		TaskHandler:   taskHandler,
-		AuthHandler:   authHandler,
+		HealthHandler:         healthHandler,
+		TaskHandler:           taskHandler,
+		AuthHandler:           authHandler,
+		InterpretationHandler: interpretationHandler,
 	}
 }
 
 // SetupRoutes はルーターをセットアップします
-func SetupRoutes(server *Server) *gin.Engine {
+func SetupRoutes(server *Server, authMiddleware *middleware.AuthMiddleware) *gin.Engine {
 	logger := middleware.NewLogger()
 
 	r := gin.New()
@@ -58,6 +60,15 @@ func SetupRoutes(server *Server) *gin.Engine {
 			tasks.PUT("/:id", server.TaskHandler.UpdateTask)
 			tasks.PATCH("/:id", server.TaskHandler.EditTask)
 			tasks.DELETE("/:id", server.TaskHandler.DeleteTask)
+		}
+
+		// Interpretation endpoints
+		interpretations := v1.Group("/interpretations")
+		interpretations.Use(authMiddleware.RequireAuth())
+		{
+			interpretations.POST("", server.InterpretationHandler.CreateInterpretation)
+			interpretations.GET("", server.InterpretationHandler.ListInterpretations)
+			interpretations.GET("/:id", server.InterpretationHandler.GetInterpretation)
 		}
 	}
 

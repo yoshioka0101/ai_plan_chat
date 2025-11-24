@@ -60,6 +60,24 @@ var AiInterpretations = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
+		AiPromptTokens: column{
+			Name:      "ai_prompt_tokens",
+			DBType:    "int",
+			Default:   "",
+			Comment:   "入力トークン数",
+			Nullable:  true,
+			Generated: false,
+			AutoIncr:  false,
+		},
+		AiCompletionTokens: column{
+			Name:      "ai_completion_tokens",
+			DBType:    "int",
+			Default:   "",
+			Comment:   "出力トークン数",
+			Nullable:  true,
+			Generated: false,
+			AutoIncr:  false,
+		},
 		CreatedAt: column{
 			Name:      "created_at",
 			DBType:    "timestamp",
@@ -137,17 +155,19 @@ var AiInterpretations = Table[
 }
 
 type aiInterpretationColumns struct {
-	ID               column
-	UserID           column
-	InputText        column
-	StructuredResult column
-	AiModel          column
-	CreatedAt        column
+	ID                 column
+	UserID             column
+	InputText          column
+	StructuredResult   column
+	AiModel            column
+	AiPromptTokens     column
+	AiCompletionTokens column
+	CreatedAt          column
 }
 
 func (c aiInterpretationColumns) AsSlice() []column {
 	return []column{
-		c.ID, c.UserID, c.InputText, c.StructuredResult, c.AiModel, c.CreatedAt,
+		c.ID, c.UserID, c.InputText, c.StructuredResult, c.AiModel, c.AiPromptTokens, c.AiCompletionTokens, c.CreatedAt,
 	}
 }
 

@@ -71,11 +71,26 @@ npx prettier --write src/
 src/
 ├── components/
 │   ├── Chat/              # Chat-related components
+│   │   ├── AIChat.tsx     # AI chat interface
+│   │   └── InterpretationHistory.tsx  # AI interpretation history
+│   ├── Modal/             # Modal components
+│   ├── Sidebar/           # Sidebar components
 │   └── Tasks/             # Task-related components
+├── contexts/              # React contexts
 ├── hooks/                 # Custom React hooks
 ├── pages/                 # Page components
+│   ├── AuthCallbackPage.tsx
+│   ├── DashboardPage.tsx
+│   └── LoginPage.tsx
 ├── services/              # API services
+│   ├── api.ts             # Base API client
+│   ├── authService.ts     # Authentication service
+│   ├── interpretationService.ts  # AI interpretation service
+│   └── taskService.ts     # Task service
 └── types/                 # TypeScript type definitions
+    ├── auth.ts
+    ├── interpretation.ts  # AI interpretation types
+    └── task.ts
 
 tests/
 ├── components/            # Component tests
@@ -84,19 +99,50 @@ tests/
 
 ## Features
 
-### Phase 1 (MVP)
-- ✅ Chat interface for task creation
-- ✅ Natural language task input
-- ✅ Real-time AI responses
-- ✅ Task preview in chat
+### Implemented Features
+- ✅ Google OAuth authentication
+- ✅ Task management (CRUD operations)
+- ✅ AI-powered interpretation of natural language
+- ✅ AI Chat interface with real-time responses
+- ✅ AI interpretation history view
+- ✅ Real backend integration with Gemini API
 
-### Phase 2
-- 🔲 Conversation history
-- 🔲 Task modification via chat
-- 🔲 Multi-turn conversations
+### AI Features
+The application now includes full AI capabilities:
+
+1. **AI Chat Interface**:
+   - Natural language input for task creation
+   - Real-time AI responses using Gemini API
+   - Interactive chat experience
+   - Support for various input types (todos, reminders, questions)
+
+2. **AI Interpretation History**:
+   - View all past AI interpretations
+   - Detailed view of interpretation results
+   - Metadata display (priority, deadline, tags)
+   - Search and filter capabilities
+
+3. **Structured AI Output**:
+   - Automatic extraction of task titles
+   - Description generation
+   - Priority detection
+   - Deadline parsing
+   - Tag suggestions
+
+## How to Use AI Features
+
+1. **Login**: Use Google OAuth to authenticate
+2. **Navigate to AI Chat**: Click on the "AI Chat" tab in the dashboard
+3. **Start Chatting**: Type natural language requests like:
+   - "I need to finish the project report by Friday"
+   - "Remind me to call John tomorrow at 3pm"
+   - "Create a high priority task to review the code"
+4. **View History**: Click on "AI History" to see all past interpretations
 
 ## Development Notes
 
-- The app currently uses mock services for AI responses
-- Real backend integration will replace mock services
-- All components are typed with TypeScript strict mode
+- The app integrates with a Go backend using Gemini API for AI interpretations
+- All API communication is handled through Axios with automatic auth token injection
+- TypeScript strict mode is enabled for type safety
+- Components follow React best practices with hooks
+- CSS modules are used for component styling

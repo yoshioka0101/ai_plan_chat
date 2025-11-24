@@ -5,6 +5,7 @@ package models
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"time"
 
@@ -18,12 +19,16 @@ import (
 	"github.com/stephenafamo/bob/dialect/mysql/sm"
 	"github.com/stephenafamo/bob/dialect/mysql/um"
 	"github.com/stephenafamo/bob/expr"
+	"github.com/stephenafamo/bob/mods"
+	"github.com/stephenafamo/bob/orm"
 )
 
 // Task is an object representing the database table.
 type Task struct {
 	// タスクID (UUID)
 	ID string `db:"id,pk" `
+	// ãƒ¦ãƒ¼ã‚¶ãƒ¼ID
+	UserID string `db:"user_id" `
 	// タスクタイトル
 	Title string `db:"title" `
 	// タスク詳細
@@ -32,10 +37,16 @@ type Task struct {
 	DueAt null.Val[time.Time] `db:"due_at" `
 	// ステータス（pending/in_progress/completed）
 	Status string `db:"status" `
+	// ä½œæˆå…ƒ
+	Source string `db:"source" `
+	// å…ƒã®AIè§£é‡ˆID
+	AiInterpretationID null.Val[string] `db:"ai_interpretation_id" `
 	// 作成日時
 	CreatedAt time.Time `db:"created_at" `
 	// 更新日時
 	UpdatedAt time.Time `db:"updated_at" `
+
+	R taskR `db:"-" `
 }
 
 // TaskSlice is an alias for a slice of pointers to Task.
@@ -48,32 +59,44 @@ var Tasks = mysql.NewTablex[*Task, TaskSlice, *TaskSetter]("tasks", buildTaskCol
 // TasksQuery is a query on the tasks table
 type TasksQuery = *mysql.ViewQuery[*Task, TaskSlice]
 
+// taskR is where relationships are stored.
+type taskR struct {
+	AiInterpretation *AiInterpretation // fk_tasks_ai_interpretation
+	User             *User             // fk_tasks_user
+}
+
 func buildTaskColumns(alias string) taskColumns {
 	return taskColumns{
 		ColumnsExpr: expr.NewColumnsExpr(
-			"id", "title", "description", "due_at", "status", "created_at", "updated_at",
+			"id", "user_id", "title", "description", "due_at", "status", "source", "ai_interpretation_id", "created_at", "updated_at",
 		).WithParent("tasks"),
-		tableAlias:  alias,
-		ID:          mysql.Quote(alias, "id"),
-		Title:       mysql.Quote(alias, "title"),
-		Description: mysql.Quote(alias, "description"),
-		DueAt:       mysql.Quote(alias, "due_at"),
-		Status:      mysql.Quote(alias, "status"),
-		CreatedAt:   mysql.Quote(alias, "created_at"),
-		UpdatedAt:   mysql.Quote(alias, "updated_at"),
+		tableAlias:         alias,
+		ID:                 mysql.Quote(alias, "id"),
+		UserID:             mysql.Quote(alias, "user_id"),
+		Title:              mysql.Quote(alias, "title"),
+		Description:        mysql.Quote(alias, "description"),
+		DueAt:              mysql.Quote(alias, "due_at"),
+		Status:             mysql.Quote(alias, "status"),
+		Source:             mysql.Quote(alias, "source"),
+		AiInterpretationID: mysql.Quote(alias, "ai_interpretation_id"),
+		CreatedAt:          mysql.Quote(alias, "created_at"),
+		UpdatedAt:          mysql.Quote(alias, "updated_at"),
 	}
 }
 
 type taskColumns struct {
 	expr.ColumnsExpr
-	tableAlias  string
-	ID          mysql.Expression
-	Title       mysql.Expression
-	Description mysql.Expression
-	DueAt       mysql.Expression
-	Status      mysql.Expression
-	CreatedAt   mysql.Expression
-	UpdatedAt   mysql.Expression
+	tableAlias         string
+	ID                 mysql.Expression
+	UserID             mysql.Expression
+	Title              mysql.Expression
+	Description        mysql.Expression
+	DueAt              mysql.Expression
+	Status             mysql.Expression
+	Source             mysql.Expression
+	AiInterpretationID mysql.Expression
+	CreatedAt          mysql.Expression
+	UpdatedAt          mysql.Expression
 }
 
 func (c taskColumns) Alias() string {
@@ -88,19 +111,25 @@ func (taskColumns) AliasedAs(alias string) taskColumns {
 // All values are optional, and do not have to be set
 // Generated columns are not included
 type TaskSetter struct {
-	ID          omit.Val[string]        `db:"id,pk" `
-	Title       omit.Val[string]        `db:"title" `
-	Description omitnull.Val[string]    `db:"description" `
-	DueAt       omitnull.Val[time.Time] `db:"due_at" `
-	Status      omit.Val[string]        `db:"status" `
-	CreatedAt   omit.Val[time.Time]     `db:"created_at" `
-	UpdatedAt   omit.Val[time.Time]     `db:"updated_at" `
+	ID                 omit.Val[string]        `db:"id,pk" `
+	UserID             omit.Val[string]        `db:"user_id" `
+	Title              omit.Val[string]        `db:"title" `
+	Description        omitnull.Val[string]    `db:"description" `
+	DueAt              omitnull.Val[time.Time] `db:"due_at" `
+	Status             omit.Val[string]        `db:"status" `
+	Source             omit.Val[string]        `db:"source" `
+	AiInterpretationID omitnull.Val[string]    `db:"ai_interpretation_id" `
+	CreatedAt          omit.Val[time.Time]     `db:"created_at" `
+	UpdatedAt          omit.Val[time.Time]     `db:"updated_at" `
 }
 
 func (s TaskSetter) SetColumns() []string {
-	vals := make([]string, 0, 7)
+	vals := make([]string, 0, 10)
 	if s.ID.IsValue() {
 		vals = append(vals, "id")
+	}
+	if s.UserID.IsValue() {
+		vals = append(vals, "user_id")
 	}
 	if s.Title.IsValue() {
 		vals = append(vals, "title")
@@ -113,6 +142,12 @@ func (s TaskSetter) SetColumns() []string {
 	}
 	if s.Status.IsValue() {
 		vals = append(vals, "status")
+	}
+	if s.Source.IsValue() {
+		vals = append(vals, "source")
+	}
+	if !s.AiInterpretationID.IsUnset() {
+		vals = append(vals, "ai_interpretation_id")
 	}
 	if s.CreatedAt.IsValue() {
 		vals = append(vals, "created_at")
@@ -127,6 +162,9 @@ func (s TaskSetter) Overwrite(t *Task) {
 	if s.ID.IsValue() {
 		t.ID = s.ID.MustGet()
 	}
+	if s.UserID.IsValue() {
+		t.UserID = s.UserID.MustGet()
+	}
 	if s.Title.IsValue() {
 		t.Title = s.Title.MustGet()
 	}
@@ -138,6 +176,12 @@ func (s TaskSetter) Overwrite(t *Task) {
 	}
 	if s.Status.IsValue() {
 		t.Status = s.Status.MustGet()
+	}
+	if s.Source.IsValue() {
+		t.Source = s.Source.MustGet()
+	}
+	if !s.AiInterpretationID.IsUnset() {
+		t.AiInterpretationID = s.AiInterpretationID.MustGetNull()
 	}
 	if s.CreatedAt.IsValue() {
 		t.CreatedAt = s.CreatedAt.MustGet()
@@ -159,6 +203,11 @@ func (s *TaskSetter) Apply(q *dialect.InsertQuery) {
 			}
 			return mysql.Arg(s.ID.MustGet()).WriteSQL(ctx, w, d, start)
 		}), bob.ExpressionFunc(func(ctx context.Context, w io.Writer, d bob.Dialect, start int) ([]any, error) {
+			if !(s.UserID.IsValue()) {
+				return mysql.Raw("DEFAULT").WriteSQL(ctx, w, d, start)
+			}
+			return mysql.Arg(s.UserID.MustGet()).WriteSQL(ctx, w, d, start)
+		}), bob.ExpressionFunc(func(ctx context.Context, w io.Writer, d bob.Dialect, start int) ([]any, error) {
 			if !(s.Title.IsValue()) {
 				return mysql.Raw("DEFAULT").WriteSQL(ctx, w, d, start)
 			}
@@ -179,6 +228,16 @@ func (s *TaskSetter) Apply(q *dialect.InsertQuery) {
 			}
 			return mysql.Arg(s.Status.MustGet()).WriteSQL(ctx, w, d, start)
 		}), bob.ExpressionFunc(func(ctx context.Context, w io.Writer, d bob.Dialect, start int) ([]any, error) {
+			if !(s.Source.IsValue()) {
+				return mysql.Raw("DEFAULT").WriteSQL(ctx, w, d, start)
+			}
+			return mysql.Arg(s.Source.MustGet()).WriteSQL(ctx, w, d, start)
+		}), bob.ExpressionFunc(func(ctx context.Context, w io.Writer, d bob.Dialect, start int) ([]any, error) {
+			if !(!s.AiInterpretationID.IsUnset()) {
+				return mysql.Raw("DEFAULT").WriteSQL(ctx, w, d, start)
+			}
+			return mysql.Arg(s.AiInterpretationID.MustGetNull()).WriteSQL(ctx, w, d, start)
+		}), bob.ExpressionFunc(func(ctx context.Context, w io.Writer, d bob.Dialect, start int) ([]any, error) {
 			if !(s.CreatedAt.IsValue()) {
 				return mysql.Raw("DEFAULT").WriteSQL(ctx, w, d, start)
 			}
@@ -196,12 +255,19 @@ func (s TaskSetter) UpdateMod() bob.Mod[*dialect.UpdateQuery] {
 }
 
 func (s TaskSetter) Expressions(prefix ...string) []bob.Expression {
-	exprs := make([]bob.Expression, 0, 7)
+	exprs := make([]bob.Expression, 0, 10)
 
 	if s.ID.IsValue() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			mysql.Quote(append(prefix, "id")...),
 			mysql.Arg(s.ID),
+		}})
+	}
+
+	if s.UserID.IsValue() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			mysql.Quote(append(prefix, "user_id")...),
+			mysql.Arg(s.UserID),
 		}})
 	}
 
@@ -230,6 +296,20 @@ func (s TaskSetter) Expressions(prefix ...string) []bob.Expression {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			mysql.Quote(append(prefix, "status")...),
 			mysql.Arg(s.Status),
+		}})
+	}
+
+	if s.Source.IsValue() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			mysql.Quote(append(prefix, "source")...),
+			mysql.Arg(s.Source),
+		}})
+	}
+
+	if !s.AiInterpretationID.IsUnset() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			mysql.Quote(append(prefix, "ai_interpretation_id")...),
+			mysql.Arg(s.AiInterpretationID),
 		}})
 	}
 
@@ -327,7 +407,7 @@ func (o *Task) Reload(ctx context.Context, exec bob.Executor) error {
 	if err != nil {
 		return err
 	}
-
+	o2.R = o.R
 	*o = *o2
 
 	return nil
@@ -374,7 +454,7 @@ func (o TaskSlice) copyMatchingRows(from ...*Task) {
 			if new.ID != old.ID {
 				continue
 			}
-
+			new.R = old.R
 			o[i] = new
 			break
 		}
@@ -471,4 +551,421 @@ func (o TaskSlice) ReloadAll(ctx context.Context, exec bob.Executor) error {
 	o.copyMatchingRows(o2...)
 
 	return nil
+}
+
+// AiInterpretation starts a query for related objects on ai_interpretations
+func (o *Task) AiInterpretation(mods ...bob.Mod[*dialect.SelectQuery]) AiInterpretationsQuery {
+	return AiInterpretations.Query(append(mods,
+		sm.Where(AiInterpretations.Columns.ID.EQ(mysql.Arg(o.AiInterpretationID))),
+	)...)
+}
+
+func (os TaskSlice) AiInterpretation(mods ...bob.Mod[*dialect.SelectQuery]) AiInterpretationsQuery {
+	PKArgSlice := make([]bob.Expression, len(os))
+	for i, o := range os {
+		PKArgSlice[i] = mysql.ArgGroup(o.AiInterpretationID)
+	}
+	PKArgExpr := mysql.Group(PKArgSlice...)
+
+	return AiInterpretations.Query(append(mods,
+		sm.Where(mysql.Group(AiInterpretations.Columns.ID).OP("IN", PKArgExpr)),
+	)...)
+}
+
+// User starts a query for related objects on users
+func (o *Task) User(mods ...bob.Mod[*dialect.SelectQuery]) UsersQuery {
+	return Users.Query(append(mods,
+		sm.Where(Users.Columns.ID.EQ(mysql.Arg(o.UserID))),
+	)...)
+}
+
+func (os TaskSlice) User(mods ...bob.Mod[*dialect.SelectQuery]) UsersQuery {
+	PKArgSlice := make([]bob.Expression, len(os))
+	for i, o := range os {
+		PKArgSlice[i] = mysql.ArgGroup(o.UserID)
+	}
+	PKArgExpr := mysql.Group(PKArgSlice...)
+
+	return Users.Query(append(mods,
+		sm.Where(mysql.Group(Users.Columns.ID).OP("IN", PKArgExpr)),
+	)...)
+}
+
+func attachTaskAiInterpretation0(ctx context.Context, exec bob.Executor, count int, task0 *Task, aiInterpretation1 *AiInterpretation) (*Task, error) {
+	setter := &TaskSetter{
+		AiInterpretationID: omitnull.From(aiInterpretation1.ID),
+	}
+
+	err := task0.Update(ctx, exec, setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachTaskAiInterpretation0: %w", err)
+	}
+
+	return task0, nil
+}
+
+func (task0 *Task) InsertAiInterpretation(ctx context.Context, exec bob.Executor, related *AiInterpretationSetter) error {
+	var err error
+
+	aiInterpretation1, err := AiInterpretations.Insert(related).One(ctx, exec)
+	if err != nil {
+		return fmt.Errorf("inserting related objects: %w", err)
+	}
+
+	_, err = attachTaskAiInterpretation0(ctx, exec, 1, task0, aiInterpretation1)
+	if err != nil {
+		return err
+	}
+
+	task0.R.AiInterpretation = aiInterpretation1
+
+	aiInterpretation1.R.Tasks = append(aiInterpretation1.R.Tasks, task0)
+
+	return nil
+}
+
+func (task0 *Task) AttachAiInterpretation(ctx context.Context, exec bob.Executor, aiInterpretation1 *AiInterpretation) error {
+	var err error
+
+	_, err = attachTaskAiInterpretation0(ctx, exec, 1, task0, aiInterpretation1)
+	if err != nil {
+		return err
+	}
+
+	task0.R.AiInterpretation = aiInterpretation1
+
+	aiInterpretation1.R.Tasks = append(aiInterpretation1.R.Tasks, task0)
+
+	return nil
+}
+
+func attachTaskUser0(ctx context.Context, exec bob.Executor, count int, task0 *Task, user1 *User) (*Task, error) {
+	setter := &TaskSetter{
+		UserID: omit.From(user1.ID),
+	}
+
+	err := task0.Update(ctx, exec, setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachTaskUser0: %w", err)
+	}
+
+	return task0, nil
+}
+
+func (task0 *Task) InsertUser(ctx context.Context, exec bob.Executor, related *UserSetter) error {
+	var err error
+
+	user1, err := Users.Insert(related).One(ctx, exec)
+	if err != nil {
+		return fmt.Errorf("inserting related objects: %w", err)
+	}
+
+	_, err = attachTaskUser0(ctx, exec, 1, task0, user1)
+	if err != nil {
+		return err
+	}
+
+	task0.R.User = user1
+
+	user1.R.Tasks = append(user1.R.Tasks, task0)
+
+	return nil
+}
+
+func (task0 *Task) AttachUser(ctx context.Context, exec bob.Executor, user1 *User) error {
+	var err error
+
+	_, err = attachTaskUser0(ctx, exec, 1, task0, user1)
+	if err != nil {
+		return err
+	}
+
+	task0.R.User = user1
+
+	user1.R.Tasks = append(user1.R.Tasks, task0)
+
+	return nil
+}
+
+type taskWhere[Q mysql.Filterable] struct {
+	ID                 mysql.WhereMod[Q, string]
+	UserID             mysql.WhereMod[Q, string]
+	Title              mysql.WhereMod[Q, string]
+	Description        mysql.WhereNullMod[Q, string]
+	DueAt              mysql.WhereNullMod[Q, time.Time]
+	Status             mysql.WhereMod[Q, string]
+	Source             mysql.WhereMod[Q, string]
+	AiInterpretationID mysql.WhereNullMod[Q, string]
+	CreatedAt          mysql.WhereMod[Q, time.Time]
+	UpdatedAt          mysql.WhereMod[Q, time.Time]
+}
+
+func (taskWhere[Q]) AliasedAs(alias string) taskWhere[Q] {
+	return buildTaskWhere[Q](buildTaskColumns(alias))
+}
+
+func buildTaskWhere[Q mysql.Filterable](cols taskColumns) taskWhere[Q] {
+	return taskWhere[Q]{
+		ID:                 mysql.Where[Q, string](cols.ID),
+		UserID:             mysql.Where[Q, string](cols.UserID),
+		Title:              mysql.Where[Q, string](cols.Title),
+		Description:        mysql.WhereNull[Q, string](cols.Description),
+		DueAt:              mysql.WhereNull[Q, time.Time](cols.DueAt),
+		Status:             mysql.Where[Q, string](cols.Status),
+		Source:             mysql.Where[Q, string](cols.Source),
+		AiInterpretationID: mysql.WhereNull[Q, string](cols.AiInterpretationID),
+		CreatedAt:          mysql.Where[Q, time.Time](cols.CreatedAt),
+		UpdatedAt:          mysql.Where[Q, time.Time](cols.UpdatedAt),
+	}
+}
+
+func (o *Task) Preload(name string, retrieved any) error {
+	if o == nil {
+		return nil
+	}
+
+	switch name {
+	case "AiInterpretation":
+		rel, ok := retrieved.(*AiInterpretation)
+		if !ok {
+			return fmt.Errorf("task cannot load %T as %q", retrieved, name)
+		}
+
+		o.R.AiInterpretation = rel
+
+		if rel != nil {
+			rel.R.Tasks = TaskSlice{o}
+		}
+		return nil
+	case "User":
+		rel, ok := retrieved.(*User)
+		if !ok {
+			return fmt.Errorf("task cannot load %T as %q", retrieved, name)
+		}
+
+		o.R.User = rel
+
+		if rel != nil {
+			rel.R.Tasks = TaskSlice{o}
+		}
+		return nil
+	default:
+		return fmt.Errorf("task has no relationship %q", name)
+	}
+}
+
+type taskPreloader struct {
+	AiInterpretation func(...mysql.PreloadOption) mysql.Preloader
+	User             func(...mysql.PreloadOption) mysql.Preloader
+}
+
+func buildTaskPreloader() taskPreloader {
+	return taskPreloader{
+		AiInterpretation: func(opts ...mysql.PreloadOption) mysql.Preloader {
+			return mysql.Preload[*AiInterpretation, AiInterpretationSlice](mysql.PreloadRel{
+				Name: "AiInterpretation",
+				Sides: []mysql.PreloadSide{
+					{
+						From:        Tasks,
+						To:          AiInterpretations,
+						FromColumns: []string{"ai_interpretation_id"},
+						ToColumns:   []string{"id"},
+					},
+				},
+			}, AiInterpretations.Columns.Names(), opts...)
+		},
+		User: func(opts ...mysql.PreloadOption) mysql.Preloader {
+			return mysql.Preload[*User, UserSlice](mysql.PreloadRel{
+				Name: "User",
+				Sides: []mysql.PreloadSide{
+					{
+						From:        Tasks,
+						To:          Users,
+						FromColumns: []string{"user_id"},
+						ToColumns:   []string{"id"},
+					},
+				},
+			}, Users.Columns.Names(), opts...)
+		},
+	}
+}
+
+type taskThenLoader[Q orm.Loadable] struct {
+	AiInterpretation func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+	User             func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+}
+
+func buildTaskThenLoader[Q orm.Loadable]() taskThenLoader[Q] {
+	type AiInterpretationLoadInterface interface {
+		LoadAiInterpretation(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
+	}
+	type UserLoadInterface interface {
+		LoadUser(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
+	}
+
+	return taskThenLoader[Q]{
+		AiInterpretation: thenLoadBuilder[Q](
+			"AiInterpretation",
+			func(ctx context.Context, exec bob.Executor, retrieved AiInterpretationLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
+				return retrieved.LoadAiInterpretation(ctx, exec, mods...)
+			},
+		),
+		User: thenLoadBuilder[Q](
+			"User",
+			func(ctx context.Context, exec bob.Executor, retrieved UserLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
+				return retrieved.LoadUser(ctx, exec, mods...)
+			},
+		),
+	}
+}
+
+// LoadAiInterpretation loads the task's AiInterpretation into the .R struct
+func (o *Task) LoadAiInterpretation(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if o == nil {
+		return nil
+	}
+
+	// Reset the relationship
+	o.R.AiInterpretation = nil
+
+	related, err := o.AiInterpretation(mods...).One(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	related.R.Tasks = TaskSlice{o}
+
+	o.R.AiInterpretation = related
+	return nil
+}
+
+// LoadAiInterpretation loads the task's AiInterpretation into the .R struct
+func (os TaskSlice) LoadAiInterpretation(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if len(os) == 0 {
+		return nil
+	}
+
+	aiInterpretations, err := os.AiInterpretation(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		for _, rel := range aiInterpretations {
+			if !o.AiInterpretationID.IsValue() {
+				continue
+			}
+
+			if !(o.AiInterpretationID.IsValue() && o.AiInterpretationID.MustGet() == rel.ID) {
+				continue
+			}
+
+			rel.R.Tasks = append(rel.R.Tasks, o)
+
+			o.R.AiInterpretation = rel
+			break
+		}
+	}
+
+	return nil
+}
+
+// LoadUser loads the task's User into the .R struct
+func (o *Task) LoadUser(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if o == nil {
+		return nil
+	}
+
+	// Reset the relationship
+	o.R.User = nil
+
+	related, err := o.User(mods...).One(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	related.R.Tasks = TaskSlice{o}
+
+	o.R.User = related
+	return nil
+}
+
+// LoadUser loads the task's User into the .R struct
+func (os TaskSlice) LoadUser(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if len(os) == 0 {
+		return nil
+	}
+
+	users, err := os.User(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		for _, rel := range users {
+
+			if !(o.UserID == rel.ID) {
+				continue
+			}
+
+			rel.R.Tasks = append(rel.R.Tasks, o)
+
+			o.R.User = rel
+			break
+		}
+	}
+
+	return nil
+}
+
+type taskJoins[Q dialect.Joinable] struct {
+	typ              string
+	AiInterpretation modAs[Q, aiInterpretationColumns]
+	User             modAs[Q, userColumns]
+}
+
+func (j taskJoins[Q]) aliasedAs(alias string) taskJoins[Q] {
+	return buildTaskJoins[Q](buildTaskColumns(alias), j.typ)
+}
+
+func buildTaskJoins[Q dialect.Joinable](cols taskColumns, typ string) taskJoins[Q] {
+	return taskJoins[Q]{
+		typ: typ,
+		AiInterpretation: modAs[Q, aiInterpretationColumns]{
+			c: AiInterpretations.Columns,
+			f: func(to aiInterpretationColumns) bob.Mod[Q] {
+				mods := make(mods.QueryMods[Q], 0, 1)
+
+				{
+					mods = append(mods, dialect.Join[Q](typ, AiInterpretations.Name().As(to.Alias())).On(
+						to.ID.EQ(cols.AiInterpretationID),
+					))
+				}
+
+				return mods
+			},
+		},
+		User: modAs[Q, userColumns]{
+			c: Users.Columns,
+			f: func(to userColumns) bob.Mod[Q] {
+				mods := make(mods.QueryMods[Q], 0, 1)
+
+				{
+					mods = append(mods, dialect.Join[Q](typ, Users.Name().As(to.Alias())).On(
+						to.ID.EQ(cols.UserID),
+					))
+				}
+
+				return mods
+			},
+		},
+	}
 }
