@@ -1,0 +1,200 @@
+# Atlas CI/CD ワークフロー例
+# 実際に使用する場合は .example を削除してカスタマイズしてください
+
+name: Atlas Migration CI
+
+on:
+  pull_request:
+    paths:
+      - 'migrations/**'
+      - 'backend/schemas/**'
+  push:
+    branches:
+      - main
+      - v.*
+    paths:
+      - 'migrations/**'
+      - 'backend/schemas/**'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Atlas
+        uses: ariga/setup-atlas@v0
+        with:
+          cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
+
+      - name: Lint Migrations
+        working-directory: migrations
+        run: |
+          atlas migrate lint \
+            --env dev \
+            --dev-url "docker://mysql/8/dev" \
+            --latest 1
+
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Atlas
+        uses: ariga/setup-atlas@v0
+
+      - name: Validate Migration Files
+        working-directory: migrations
+        run: |
+          atlas migrate validate \
+            --env dev
+
+  plan:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Atlas
+        uses: ariga/setup-atlas@v0
+
+      - name: Setup Test Database
+        run: |
+          docker run -d \
+            --name mysql-test \
+            -e MYSQL_ROOT_PASSWORD=password \
+            -e MYSQL_DATABASE=ai_chat_task \
+            -p 3307:3306 \
+            mysql:8
+
+          # Wait for MySQL to be ready
+          sleep 20
+
+      - name: Generate Migration Plan
+        id: plan
+        working-directory: migrations
+        run: |
+          atlas migrate apply \
+            --env dev \
+            --url "mysql://root:password@localhost:3307/ai_chat_task" \
+            --dry-run \
+            > plan.txt
+
+          cat plan.txt
+
+      - name: Comment PR with Plan
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('migrations/plan.txt', 'utf8');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Atlas Migration Plan\n\n\`\`\`sql\n${plan}\n\`\`\``
+            });
+
+  drift-detection:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Atlas
+        uses: ariga/setup-atlas@v0
+
+      # 開発環境のスキーマドリフトをチェック
+      # 本番環境の場合は適切なDB接続情報を使用
+      - name: Check Schema Drift
+        working-directory: migrations
+        env:
+          DATABASE_URL: ${{ secrets.DEV_DATABASE_URL }}
+        run: |
+          atlas schema diff \
+            --from "file://." \
+            --to "$DATABASE_URL" \
+            --dev-url "docker://mysql/8/dev"
+
+  # 5. 開発環境への自動適用（main ブランチマージ時）
+  apply-dev:
+    runs-on: ubuntu-latest
+    needs: [lint, validate]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: development
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Atlas
+        uses: ariga/setup-atlas@v0
+
+      - name: Apply Migrations to Dev
+        working-directory: migrations
+        env:
+          DATABASE_URL: ${{ secrets.DEV_DATABASE_URL }}
+        run: |
+          atlas migrate apply \
+            --env dev \
+            --url "$DATABASE_URL"
+
+  # 6. ステージング環境への適用（手動承認）
+  apply-staging:
+    runs-on: ubuntu-latest
+    needs: [lint, validate]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    environment: staging # GitHub Environment で承認フローを設定
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Atlas
+        uses: ariga/setup-atlas@v0
+
+      - name: Apply Migrations to Staging
+        working-directory: migrations
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: |
+          atlas migrate apply \
+            --env dev \
+            --url "$DATABASE_URL"
+
+  # 7. 本番環境への適用（手動承認 + 通知）
+  apply-production:
+    runs-on: ubuntu-latest
+    needs: [apply-staging]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    environment: production # GitHub Environment で承認フローを設定
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Atlas
+        uses: ariga/setup-atlas@v0
+
+      - name: Backup Database
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: |
+          echo "Backing up production database..."
+
+      - name: Apply Migrations to Production
+        working-directory: migrations
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: |
+          atlas migrate apply \
+            --env dev \
+            --url "$DATABASE_URL" \
+            --tx-mode file # トランザクションモードで安全に適用
+
+      - name: Notify Success
+        if: success()
+        run: |
+          echo "Migration applied successfully to production"
+          # Slack通知などを追加可能
+
+      - name: Notify Failure
+        if: failure()
+        run: |
+          echo "Migration failed! Manual intervention required"
