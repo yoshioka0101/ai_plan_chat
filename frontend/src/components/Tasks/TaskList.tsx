@@ -16,6 +16,7 @@ export const TaskList = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>();
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -88,6 +89,8 @@ export const TaskList = () => {
         setEditingTask(undefined);
         setShowForm(false);
       }
+
+      setSuccessMessage('タスクを削除しました');
     } catch (err) {
       setError('Failed to delete task. Please try again.');
       console.error('Error deleting task:', err);
@@ -113,6 +116,18 @@ export const TaskList = () => {
     } catch (err) {
       setError('Failed to update task. Please try again.');
       console.error('Error updating task:', err);
+    }
+  };
+
+  const handleTaskCreatedFromAI = async (_taskId: string) => {
+    try {
+      // 最新一覧を取得し、漏れなく反映
+      await loadTasks();
+      setViewMode('list');
+      setSuccessMessage('タスクを作成しました');
+    } catch (err) {
+      setError('承認したタスクの取得に失敗しました。');
+      console.error('Error fetching created task:', err);
     }
   };
 
@@ -190,6 +205,37 @@ export const TaskList = () => {
                 }}
               >
                 {error}
+              </div>
+            )}
+            {successMessage && (
+              <div
+                style={{
+                  padding: '12px 16px',
+                  backgroundColor: '#ecfdf3',
+                  border: '1px solid #bbf7d0',
+                  borderRadius: '8px',
+                  color: '#15803d',
+                  marginTop: '12px',
+                  fontSize: '14px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <span>{successMessage}</span>
+                <button
+                  onClick={() => setSuccessMessage(null)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#15803d',
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                  }}
+                  aria-label="close success message"
+                >
+                  ×
+                </button>
               </div>
             )}
           </div>
@@ -301,6 +347,8 @@ export const TaskList = () => {
         ) : (
           <AIView
             onNewTaskClick={() => setShowForm(true)}
+            onTaskCreated={handleTaskCreatedFromAI}
+            onNotify={(msg) => setSuccessMessage(msg)}
           />
         )}
         </div>

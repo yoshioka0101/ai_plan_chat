@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import type { Task, CreateTaskRequest, TaskStatus } from '../../types/task';
-import { interpretationService } from '../../services/interpretationService';
 
 interface TaskFormProps {
   task?: Task;
@@ -13,9 +12,6 @@ export const TaskForm = ({ task, onSubmit, onCancel }: TaskFormProps) => {
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [status, setStatus] = useState<TaskStatus>('todo');
-  const [aiInput, setAiInput] = useState('');
-  const [isAILoading, setIsAILoading] = useState(false);
-  const [showAIInput, setShowAIInput] = useState(false);
 
   useEffect(() => {
     if (task) {
@@ -31,43 +27,6 @@ export const TaskForm = ({ task, onSubmit, onCancel }: TaskFormProps) => {
       setStatus('todo');
     }
   }, [task]);
-
-  const handleAIGenerate = async () => {
-    if (!aiInput.trim()) return;
-
-    setIsAILoading(true);
-    try {
-      const response = await interpretationService.createInterpretation({
-        input_text: aiInput,
-      });
-
-      const result = response.interpretation.structured_result;
-
-      // AI結果をフォームに反映
-      if (result.title) {
-        setTitle(result.title);
-      }
-      if (result.description) {
-        setDescription(result.description);
-      }
-      if (result.metadata?.deadline) {
-        const deadlineDate = new Date(result.metadata.deadline);
-        setDueDate(deadlineDate.toISOString().split('T')[0]);
-      }
-      // priority から status への変換（オプション）
-      if (result.metadata?.priority === 'high') {
-        setStatus('in_progress');
-      }
-
-      setShowAIInput(false);
-      setAiInput('');
-    } catch (error) {
-      console.error('AI generation failed:', error);
-      alert('AI generation failed. Please try again.');
-    } finally {
-      setIsAILoading(false);
-    }
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,101 +53,6 @@ export const TaskForm = ({ task, onSubmit, onCancel }: TaskFormProps) => {
       <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>
         {task ? '✏️ タスクを編集' : '✨ タスクを作成'}
       </h3>
-
-      {!task && !showAIInput && (
-        <div style={{ marginBottom: '16px' }}>
-          <button
-            type="button"
-            onClick={() => setShowAIInput(true)}
-            style={{
-              width: '100%',
-              padding: '12px',
-              borderRadius: '8px',
-              border: '2px dashed #3b82f6',
-              backgroundColor: '#eff6ff',
-              color: '#3b82f6',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#dbeafe';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#eff6ff';
-            }}
-          >
-            🤖 AIでタスクを生成
-          </button>
-        </div>
-      )}
-
-      {showAIInput && (
-        <div style={{ marginBottom: '16px', padding: '16px', backgroundColor: '#eff6ff', borderRadius: '8px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '14px', color: '#1e40af' }}>
-            AIに何をすべきか教えてください
-          </label>
-          <textarea
-            value={aiInput}
-            onChange={(e) => setAiInput(e.target.value)}
-            placeholder="例: 明日までにプロジェクトレポートを完成させる"
-            rows={3}
-            disabled={isAILoading}
-            style={{
-              width: '100%',
-              padding: '10px',
-              border: '1px solid #3b82f6',
-              borderRadius: '6px',
-              fontSize: '14px',
-              fontFamily: 'inherit',
-              boxSizing: 'border-box',
-              resize: 'vertical',
-              marginBottom: '8px',
-            }}
-          />
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              type="button"
-              onClick={handleAIGenerate}
-              disabled={isAILoading || !aiInput.trim()}
-              style={{
-                flex: 1,
-                padding: '10px',
-                borderRadius: '6px',
-                border: 'none',
-                backgroundColor: isAILoading || !aiInput.trim() ? '#9ca3af' : '#3b82f6',
-                color: '#ffffff',
-                cursor: isAILoading || !aiInput.trim() ? 'not-allowed' : 'pointer',
-                fontSize: '14px',
-                fontWeight: '600',
-              }}
-            >
-              {isAILoading ? '生成中...' : '✨ 生成'}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setShowAIInput(false);
-                setAiInput('');
-              }}
-              disabled={isAILoading}
-              style={{
-                padding: '10px 16px',
-                borderRadius: '6px',
-                border: '1px solid #d1d5db',
-                backgroundColor: '#ffffff',
-                color: '#374151',
-                cursor: isAILoading ? 'not-allowed' : 'pointer',
-                fontSize: '14px',
-                fontWeight: '600',
-              }}
-            >
-              キャンセル
-            </button>
-          </div>
-        </div>
-      )}
 
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: '16px' }}>

@@ -1,3 +1,5 @@
+import type { TaskStatus } from './task';
+
 // AI Interpretation type definitions
 
 export type InterpretationType = 'todo' | 'reminder' | 'question' | 'other';
@@ -42,4 +44,39 @@ export interface InterpretationsListResponse {
   total: number;
   limit: number;
   offset: number;
+}
+
+export type InterpretationItemStatus = 'pending' | 'created';
+
+export type ResourceType = 'task' | 'event' | 'wallet';
+
+export interface InterpretationItemData {
+  title?: string;
+  description?: string;
+  due_at?: string;
+  status?: TaskStatus;
+  tags?: string[];
+  [key: string]: unknown;
+}
+
+export interface InterpretationItem {
+  id: string;
+  interpretation_id: string;
+  item_index: number;
+  resource_type: ResourceType;
+  resource_id?: string;
+  status: InterpretationItemStatus;
+  data: InterpretationItemData;
+  original_data: Record<string, unknown>;
+  reviewed_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InterpretationItemsResponse {
+  items: InterpretationItem[];
+}
+
+export interface ApproveItemResponse {
+  resource_id: string;
 }

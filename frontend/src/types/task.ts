@@ -4,6 +4,8 @@ export type TaskStatus = 'todo' | 'in_progress' | 'done';
 
 export interface Task {
   id: string;
+  user_id: string;
+  source: 'manual' | 'ai';
   title: string;
   description?: string;
   due_at?: string;
