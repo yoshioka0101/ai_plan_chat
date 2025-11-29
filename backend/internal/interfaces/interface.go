@@ -12,6 +12,7 @@ import (
 type TaskRepository interface {
 	GetTaskByID(ctx context.Context, id string) (*models.Task, error)
 	GetAllTasks(ctx context.Context) (models.TaskSlice, error)
+	GetTasksByUserID(ctx context.Context, userID string) (models.TaskSlice, error)
 	CreateTask(ctx context.Context, task *models.Task) error
 	UpdateTask(ctx context.Context, task *models.Task) error
 	EditTask(ctx context.Context, id string, updates map[string]interface{}) (*models.Task, error)
@@ -33,4 +34,43 @@ type InterpretationRepository interface {
 	CreateInterpretation(ctx context.Context, interpretation *entity.AIInterpretation) error
 	GetInterpretationByID(ctx context.Context, id string) (*entity.AIInterpretation, error)
 	GetInterpretationsByUserID(ctx context.Context, userID string, limit, offset int) ([]*entity.AIInterpretation, error)
+}
+
+// InterpretationItemRepository はAI解釈アイテムのデータアクセスを提供します
+type InterpretationItemRepository interface {
+	// アイテム一覧取得
+	GetItemsByInterpretationID(ctx context.Context, interpretationID string) ([]*entity.InterpretationItem, error)
+
+	// アイテム単体取得
+	GetItemByID(ctx context.Context, id string) (*entity.InterpretationItem, error)
+
+	// アイテム作成（バルク）
+	CreateItems(ctx context.Context, items []*entity.InterpretationItem) error
+
+	// アイテム更新（編集）
+	UpdateItem(ctx context.Context, item *entity.InterpretationItem) error
+
+	// アイテム承認（ステータス更新 + resource_id設定）
+	ApproveItem(ctx context.Context, itemID string, resourceID string) error
+
+	// 複数アイテム承認
+	ApproveItems(ctx context.Context, approvals map[string]string) error
+}
+
+// InterpretationItemUseCase はAI解釈アイテムのビジネスロジックを提供します
+type InterpretationItemUseCase interface {
+	// アイテム一覧取得
+	GetItems(ctx context.Context, interpretationID string) ([]*entity.InterpretationItem, error)
+
+	// アイテム単体取得
+	GetItem(ctx context.Context, itemID string) (*entity.InterpretationItem, error)
+
+	// アイテム編集（dataフィールドの更新）
+	UpdateItem(ctx context.Context, itemID string, data []byte) (*entity.InterpretationItem, error)
+
+	// 単一アイテム承認→リソース作成
+	ApproveItem(ctx context.Context, itemID string) (resourceID string, err error)
+
+	// 複数アイテム一括承認→リソース作成（トランザクション）
+	ApproveMultipleItems(ctx context.Context, itemIDs []string) (resourceIDs map[string]string, err error)
 }

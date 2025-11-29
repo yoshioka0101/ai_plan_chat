@@ -17,36 +17,40 @@ import (
 var Preload = getPreloaders()
 
 type preloaders struct {
-	AiInterpretation aiInterpretationPreloader
-	Task             taskPreloader
-	UserAuth         userAuthPreloader
-	User             userPreloader
+	AiInterpretation   aiInterpretationPreloader
+	InterpretationItem interpretationItemPreloader
+	Task               taskPreloader
+	UserAuth           userAuthPreloader
+	User               userPreloader
 }
 
 func getPreloaders() preloaders {
 	return preloaders{
-		AiInterpretation: buildAiInterpretationPreloader(),
-		Task:             buildTaskPreloader(),
-		UserAuth:         buildUserAuthPreloader(),
-		User:             buildUserPreloader(),
+		AiInterpretation:   buildAiInterpretationPreloader(),
+		InterpretationItem: buildInterpretationItemPreloader(),
+		Task:               buildTaskPreloader(),
+		UserAuth:           buildUserAuthPreloader(),
+		User:               buildUserPreloader(),
 	}
 }
 
 var SelectThenLoad = getThenLoaders[*dialect.SelectQuery]()
 
 type thenLoaders[Q orm.Loadable] struct {
-	AiInterpretation aiInterpretationThenLoader[Q]
-	Task             taskThenLoader[Q]
-	UserAuth         userAuthThenLoader[Q]
-	User             userThenLoader[Q]
+	AiInterpretation   aiInterpretationThenLoader[Q]
+	InterpretationItem interpretationItemThenLoader[Q]
+	Task               taskThenLoader[Q]
+	UserAuth           userAuthThenLoader[Q]
+	User               userThenLoader[Q]
 }
 
 func getThenLoaders[Q orm.Loadable]() thenLoaders[Q] {
 	return thenLoaders[Q]{
-		AiInterpretation: buildAiInterpretationThenLoader[Q](),
-		Task:             buildTaskThenLoader[Q](),
-		UserAuth:         buildUserAuthThenLoader[Q](),
-		User:             buildUserThenLoader[Q](),
+		AiInterpretation:   buildAiInterpretationThenLoader[Q](),
+		InterpretationItem: buildInterpretationItemThenLoader[Q](),
+		Task:               buildTaskThenLoader[Q](),
+		UserAuth:           buildUserAuthThenLoader[Q](),
+		User:               buildUserThenLoader[Q](),
 	}
 }
 

@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -42,7 +43,13 @@ func (u *taskUsecase) GetTask(ctx context.Context, id string) (*models.Task, err
 func (u *taskUsecase) GetTaskList(ctx context.Context) (models.TaskSlice, error) {
 	u.logger.InfoContext(ctx, "UseCase: GetTaskList started")
 
-	tasks, err := u.repo.GetAllTasks(ctx)
+	userID, ok := ctx.Value("user_id").(string)
+	if !ok || userID == "" {
+		u.logger.WarnContext(ctx, "UseCase: Missing user_id in context for GetTaskList")
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	tasks, err := u.repo.GetTasksByUserID(ctx, userID)
 	if err != nil {
 		u.logger.ErrorContext(ctx, "UseCase: Failed to get task list",
 			slog.String("error", err.Error()),
@@ -63,6 +70,12 @@ func (u *taskUsecase) CreateTask(ctx context.Context, title string, description 
 		slog.String("status", status),
 	)
 
+	userID, ok := ctx.Value("user_id").(string)
+	if !ok || userID == "" {
+		u.logger.WarnContext(ctx, "UseCase: Missing user_id in context for CreateTask")
+		return nil, fmt.Errorf("unauthorized")
+	}
+
 	// バリデーション
 	if err := validation.ValidateCreateTaskRequest(title, description, dueAt, status); err != nil {
 		u.logger.WarnContext(ctx, "UseCase: Validation failed",
@@ -78,8 +91,10 @@ func (u *taskUsecase) CreateTask(ctx context.Context, title string, description 
 
 	// モデルを作成
 	task := &models.Task{
+		UserID: userID,
 		Title:  title,
 		Status: status,
+		Source: "manual",
 	}
 
 	if description != nil {
@@ -111,6 +126,12 @@ func (u *taskUsecase) UpdateTask(ctx context.Context, id string, title string, d
 		slog.String("status", status),
 	)
 
+	userID, ok := ctx.Value("user_id").(string)
+	if !ok || userID == "" {
+		u.logger.WarnContext(ctx, "UseCase: Missing user_id in context for UpdateTask")
+		return nil, fmt.Errorf("unauthorized")
+	}
+
 	// バリデーション
 	if err := validation.ValidateUpdateTaskRequest(title, description, dueAt, status); err != nil {
 		u.logger.WarnContext(ctx, "UseCase: Validation failed",
@@ -127,6 +148,14 @@ func (u *taskUsecase) UpdateTask(ctx context.Context, id string, title string, d
 			slog.String("error", err.Error()),
 		)
 		return nil, err
+	}
+
+	if existingTask.UserID != userID {
+		u.logger.WarnContext(ctx, "UseCase: Unauthorized task update attempt",
+			slog.String("task_id", id),
+			slog.String("user_id", userID),
+		)
+		return nil, fmt.Errorf("unauthorized")
 	}
 
 	// フィールドを更新
@@ -165,6 +194,12 @@ func (u *taskUsecase) EditTask(ctx context.Context, id string, title *string, de
 	u.logger.InfoContext(ctx, "UseCase: EditTask started",
 		slog.String("task_id", id),
 	)
+
+	userID, ok := ctx.Value("user_id").(string)
+	if !ok || userID == "" {
+		u.logger.WarnContext(ctx, "UseCase: Missing user_id in context for EditTask")
+		return nil, fmt.Errorf("unauthorized")
+	}
 
 	// バリデーション
 	if err := validation.ValidateEditTaskRequest(title, description, dueAt, status); err != nil {
@@ -211,14 +246,28 @@ func (u *taskUsecase) DeleteTask(ctx context.Context, id string) error {
 		slog.String("task_id", id),
 	)
 
+	userID, ok := ctx.Value("user_id").(string)
+	if !ok || userID == "" {
+		u.logger.WarnContext(ctx, "UseCase: Missing user_id in context for DeleteTask")
+		return fmt.Errorf("unauthorized")
+	}
+
 	// タスクの存在確認
-	_, err := u.repo.GetTaskByID(ctx, id)
+	task, err := u.repo.GetTaskByID(ctx, id)
 	if err != nil {
 		u.logger.ErrorContext(ctx, "UseCase: Task not found",
 			slog.String("task_id", id),
 			slog.String("error", err.Error()),
 		)
 		return err
+	}
+
+	if task.UserID != userID {
+		u.logger.WarnContext(ctx, "UseCase: Unauthorized delete attempt",
+			slog.String("task_id", id),
+			slog.String("user_id", userID),
+		)
+		return fmt.Errorf("unauthorized")
 	}
 
 	// リポジトリで削除

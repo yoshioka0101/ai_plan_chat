@@ -1,6 +1,7 @@
-h1:muI1SiJztMal/LSNyFuoDOhuVRTHAzmkEpSAh94bdww=
+h1:MkfRUrrLqBzq0oC5kYO9pp2jh88tNEmU0HFljXfXjFI=
 001_init.sql h1:cCFkSWaI/Pw0u50UW1rA9klU+UCnVA4B+xqOHjcz5Ik=
 20251019004030_create_tasks_table.sql h1:dY1QNDFs4Bx4hZdQiaQoY4D7vXK5zSSkqMUgspmMosU=
 20251023000000_update_task_status_values.sql h1:RSQCNyGK3wEG6FLe2nBQCKDSgtjYmX4R/YmvPiM/F8o=
 20251028234704_ai_chat_interpretation.sql h1:DmIHRdE+hnamB+ccj/Rq7w/wy2l012TCqoTBKdRDNXk=
 20251109203219_add_ai_tokens.sql h1:UXjZjnUw7RN8EbJ4+436nRsgC8hqyalozYcw6iKO38w=
+20251126202926_add_interpretation_items_and_original_result.sql h1:JKsCbTivluapa9TTwL+K1HGpi9LKYoaiZBiSBkmcsHg=

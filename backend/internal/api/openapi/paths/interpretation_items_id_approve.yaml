@@ -1,0 +1,31 @@
+post:
+  summary: ApproveInterpretationItem
+  description: アイテムを承認してリソース（タスク等）を作成
+  operationId: approveInterpretationItem
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: アイテムID
+      schema:
+        type: string
+        format: uuid
+  responses:
+    '200':
+      description: Success
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ApproveItemResponse.yaml'
+    '400':
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ErrorResponse.yaml'
+    '404':
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ErrorResponse.yaml'

@@ -9,9 +9,14 @@ type contextKey string
 
 var (
 	// Relationship Contexts for ai_interpretations
-	aiInterpretationWithParentsCascadingCtx = newContextual[bool]("aiInterpretationWithParentsCascading")
-	aiInterpretationRelUserCtx              = newContextual[bool]("ai_interpretations.users.fk_ai_interpretations_user")
-	aiInterpretationRelTasksCtx             = newContextual[bool]("ai_interpretations.tasks.fk_tasks_ai_interpretation")
+	aiInterpretationWithParentsCascadingCtx                 = newContextual[bool]("aiInterpretationWithParentsCascading")
+	aiInterpretationRelUserCtx                              = newContextual[bool]("ai_interpretations.users.fk_ai_interpretations_user")
+	aiInterpretationRelInterpretationInterpretationItemsCtx = newContextual[bool]("ai_interpretations.interpretation_items.fk_interpretation_items_interpretation")
+	aiInterpretationRelTasksCtx                             = newContextual[bool]("ai_interpretations.tasks.fk_tasks_ai_interpretation")
+
+	// Relationship Contexts for interpretation_items
+	interpretationItemWithParentsCascadingCtx              = newContextual[bool]("interpretationItemWithParentsCascading")
+	interpretationItemRelInterpretationAiInterpretationCtx = newContextual[bool]("ai_interpretations.interpretation_items.fk_interpretation_items_interpretation")
 
 	// Relationship Contexts for tasks
 	taskWithParentsCascadingCtx = newContextual[bool]("taskWithParentsCascading")

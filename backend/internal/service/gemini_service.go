@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"text/template"
+	"time"
 
 	"github.com/google/generative-ai-go/genai"
 	"github.com/yoshioka0101/ai_plan_chat/internal/entity"
@@ -62,8 +63,14 @@ func NewGeminiService(apiKey string, modelName string) (*GeminiService, error) {
 	}, nil
 }
 
+// InterpretInputResult はAI解釈の結果と生JSONを含む
+type InterpretInputResult struct {
+	Result       *entity.InterpretationResult
+	OriginalJSON []byte
+}
+
 // InterpretInput はユーザーの入力を解析します
-func (s *GeminiService) InterpretInput(ctx context.Context, inputText string) (*entity.InterpretationResult, error) {
+func (s *GeminiService) InterpretInput(ctx context.Context, inputText string) (*InterpretInputResult, error) {
 	prompt := buildPrompt(inputText)
 
 	resp, err := s.model.GenerateContent(ctx, genai.Text(prompt))
@@ -84,7 +91,9 @@ func (s *GeminiService) InterpretInput(ctx context.Context, inputText string) (*
 	}
 
 	responseText := fmt.Sprintf("%v", resp.Candidates[0].Content.Parts[0])
-	if err := json.Unmarshal([]byte(responseText), &rawResult); err != nil {
+	originalJSON := []byte(responseText)
+
+	if err := json.Unmarshal(originalJSON, &rawResult); err != nil {
 		return nil, fmt.Errorf("failed to parse Gemini response: %w, response: %s", err, responseText)
 	}
 
@@ -96,7 +105,14 @@ func (s *GeminiService) InterpretInput(ctx context.Context, inputText string) (*
 		Metadata:    convertToInterpretationMetadata(rawResult.Metadata),
 	}
 
-	return result, nil
+	if result.Type == "" {
+		result.Type = entity.InterpretationTypeTodo
+	}
+
+	return &InterpretInputResult{
+		Result:       result,
+		OriginalJSON: originalJSON,
+	}, nil
 }
 
 // ModelName は使用中のモデル名を返します
@@ -138,6 +154,13 @@ func convertToInterpretationMetadata(raw map[string]interface{}) entity.Interpre
 	// Todo関連フィールドの変換
 	if priority, ok := raw["priority"].(string); ok {
 		metadata.Priority = &priority
+	}
+
+	// 期限の変換
+	if deadlineStr, ok := raw["deadline"].(string); ok {
+		if t, err := time.Parse(time.RFC3339, deadlineStr); err == nil {
+			metadata.Deadline = &t
+		}
 	}
 
 	// その他のフィールドはExtraに格納

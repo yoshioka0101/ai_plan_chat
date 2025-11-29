@@ -27,9 +27,17 @@ func (p *TaskPresenter) GetTask(task *models.Task) api.Task {
 		id = uuid.Nil
 	}
 
+	userID, err := uuid.Parse(task.UserID)
+	if err != nil {
+		log.Printf("Warning: invalid user UUID in database: %s, error: %v", task.UserID, err)
+		userID = uuid.Nil
+	}
+
 	response := api.Task{
 		Id:        types.UUID(id),
+		UserId:    types.UUID(userID),
 		Title:     task.Title,
+		Source:    api.TaskSource(task.Source),
 		Status:    api.TaskStatus(task.Status),
 		CreatedAt: task.CreatedAt,
 		UpdatedAt: task.UpdatedAt,
@@ -42,6 +50,14 @@ func (p *TaskPresenter) GetTask(task *models.Task) api.Task {
 
 	if val, ok := task.DueAt.Get(); ok {
 		response.DueAt = &val
+	}
+
+	if task.AiInterpretationID.IsValue() {
+		if val, ok := task.AiInterpretationID.Get(); ok {
+			if parsed, err := uuid.Parse(val); err == nil {
+				response.InterpretationId = (*types.UUID)(&parsed)
+			}
+		}
 	}
 
 	return response

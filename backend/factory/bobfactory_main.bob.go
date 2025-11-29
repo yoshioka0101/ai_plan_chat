@@ -14,10 +14,11 @@ import (
 )
 
 type Factory struct {
-	baseAiInterpretationMods AiInterpretationModSlice
-	baseTaskMods             TaskModSlice
-	baseUserAuthMods         UserAuthModSlice
-	baseUserMods             UserModSlice
+	baseAiInterpretationMods   AiInterpretationModSlice
+	baseInterpretationItemMods InterpretationItemModSlice
+	baseTaskMods               TaskModSlice
+	baseUserAuthMods           UserAuthModSlice
+	baseUserMods               UserModSlice
 }
 
 func New() *Factory {
@@ -47,6 +48,7 @@ func (f *Factory) FromExistingAiInterpretation(m *models.AiInterpretation) *AiIn
 	o.UserID = func() string { return m.UserID }
 	o.InputText = func() string { return m.InputText }
 	o.StructuredResult = func() types.JSON[json.RawMessage] { return m.StructuredResult }
+	o.OriginalResult = func() null.Val[types.JSON[json.RawMessage]] { return m.OriginalResult }
 	o.AiModel = func() string { return m.AiModel }
 	o.AiPromptTokens = func() null.Val[int32] { return m.AiPromptTokens }
 	o.AiCompletionTokens = func() null.Val[int32] { return m.AiCompletionTokens }
@@ -56,8 +58,50 @@ func (f *Factory) FromExistingAiInterpretation(m *models.AiInterpretation) *AiIn
 	if m.R.User != nil {
 		AiInterpretationMods.WithExistingUser(m.R.User).Apply(ctx, o)
 	}
+	if len(m.R.InterpretationInterpretationItems) > 0 {
+		AiInterpretationMods.AddExistingInterpretationInterpretationItems(m.R.InterpretationInterpretationItems...).Apply(ctx, o)
+	}
 	if len(m.R.Tasks) > 0 {
 		AiInterpretationMods.AddExistingTasks(m.R.Tasks...).Apply(ctx, o)
+	}
+
+	return o
+}
+
+func (f *Factory) NewInterpretationItem(mods ...InterpretationItemMod) *InterpretationItemTemplate {
+	return f.NewInterpretationItemWithContext(context.Background(), mods...)
+}
+
+func (f *Factory) NewInterpretationItemWithContext(ctx context.Context, mods ...InterpretationItemMod) *InterpretationItemTemplate {
+	o := &InterpretationItemTemplate{f: f}
+
+	if f != nil {
+		f.baseInterpretationItemMods.Apply(ctx, o)
+	}
+
+	InterpretationItemModSlice(mods).Apply(ctx, o)
+
+	return o
+}
+
+func (f *Factory) FromExistingInterpretationItem(m *models.InterpretationItem) *InterpretationItemTemplate {
+	o := &InterpretationItemTemplate{f: f, alreadyPersisted: true}
+
+	o.ID = func() string { return m.ID }
+	o.InterpretationID = func() string { return m.InterpretationID }
+	o.ItemIndex = func() int32 { return m.ItemIndex }
+	o.ResourceType = func() string { return m.ResourceType }
+	o.ResourceID = func() null.Val[string] { return m.ResourceID }
+	o.Status = func() string { return m.Status }
+	o.Data = func() types.JSON[json.RawMessage] { return m.Data }
+	o.OriginalData = func() types.JSON[json.RawMessage] { return m.OriginalData }
+	o.ReviewedAt = func() null.Val[time.Time] { return m.ReviewedAt }
+	o.CreatedAt = func() time.Time { return m.CreatedAt }
+	o.UpdatedAt = func() time.Time { return m.UpdatedAt }
+
+	ctx := context.Background()
+	if m.R.InterpretationAiInterpretation != nil {
+		InterpretationItemMods.WithExistingInterpretationAiInterpretation(m.R.InterpretationAiInterpretation).Apply(ctx, o)
 	}
 
 	return o
@@ -186,6 +230,14 @@ func (f *Factory) ClearBaseAiInterpretationMods() {
 
 func (f *Factory) AddBaseAiInterpretationMod(mods ...AiInterpretationMod) {
 	f.baseAiInterpretationMods = append(f.baseAiInterpretationMods, mods...)
+}
+
+func (f *Factory) ClearBaseInterpretationItemMods() {
+	f.baseInterpretationItemMods = nil
+}
+
+func (f *Factory) AddBaseInterpretationItemMod(mods ...InterpretationItemMod) {
+	f.baseInterpretationItemMods = append(f.baseInterpretationItemMods, mods...)
 }
 
 func (f *Factory) ClearBaseTaskMods() {

@@ -27,8 +27,13 @@ type interpretationRepository struct {
 
 // NewInterpretationRepository は新しいInterpretationRepositoryを生成します
 func NewInterpretationRepository(db *sql.DB, logger *slog.Logger) interfaces.InterpretationRepository {
+	return NewInterpretationRepositoryWithExecutor(bob.NewDB(db), logger)
+}
+
+// NewInterpretationRepositoryWithExecutor は既存のexecutorを使ってInterpretationRepositoryを生成します
+func NewInterpretationRepositoryWithExecutor(exec bob.Executor, logger *slog.Logger) interfaces.InterpretationRepository {
 	return &interpretationRepository{
-		db:     bob.NewDB(db),
+		db:     exec,
 		logger: logger,
 	}
 }
@@ -70,12 +75,19 @@ func (r *interpretationRepository) CreateInterpretation(ctx context.Context, int
 		aiCompletionTokens = null.From(int32(*interpretation.AICompletionTokens))
 	}
 
+	// OriginalResultをnull.Valに変換
+	var originalResult null.Val[types.JSON[json.RawMessage]]
+	if len(interpretation.OriginalResult) > 0 {
+		originalResult = null.From(types.NewJSON(json.RawMessage(interpretation.OriginalResult)))
+	}
+
 	_, err = models.AiInterpretations.Insert(
 		&models.AiInterpretationSetter{
 			ID:                 omit.From(interpretation.ID),
 			UserID:             omit.From(interpretation.UserID),
 			InputText:          omit.From(interpretation.InputText),
 			StructuredResult:   omit.From(types.NewJSON(json.RawMessage(structuredResult))),
+			OriginalResult:     omitnull.FromNull(originalResult),
 			AiModel:            omit.From(interpretation.AIModel),
 			AiPromptTokens:     omitnull.FromNull(aiPromptTokens),
 			AiCompletionTokens: omitnull.FromNull(aiCompletionTokens),
@@ -185,9 +197,9 @@ func (r *interpretationRepository) GetInterpretationsByUserID(ctx context.Contex
 func (r *interpretationRepository) toEntity(ai *models.AiInterpretation) (*entity.AIInterpretation, error) {
 	// JSONからInterpretationResultに変換
 	var structuredResult struct {
-		Type        entity.InterpretationType  `json:"type"`
-		Title       string                     `json:"title"`
-		Description string                     `json:"description"`
+		Type        entity.InterpretationType     `json:"type"`
+		Title       string                        `json:"title"`
+		Description string                        `json:"description"`
 		Metadata    entity.InterpretationMetadata `json:"metadata"`
 	}
 
@@ -211,6 +223,12 @@ func (r *interpretationRepository) toEntity(ai *models.AiInterpretation) (*entit
 		aiCompletionTokens = &val
 	}
 
+	var originalResult []byte
+	if val, ok := ai.OriginalResult.Get(); ok {
+		raw, _ := val.MarshalJSON()
+		originalResult = raw
+	}
+
 	return &entity.AIInterpretation{
 		ID:        ai.ID,
 		UserID:    ai.UserID,
@@ -221,6 +239,7 @@ func (r *interpretationRepository) toEntity(ai *models.AiInterpretation) (*entit
 			Description: structuredResult.Description,
 			Metadata:    structuredResult.Metadata,
 		},
+		OriginalResult:     originalResult,
 		AIModel:            ai.AiModel,
 		AIPromptTokens:     aiPromptTokens,
 		AICompletionTokens: aiCompletionTokens,

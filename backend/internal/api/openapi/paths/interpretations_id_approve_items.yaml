@@ -1,0 +1,37 @@
+post:
+  summary: ApproveMultipleInterpretationItems
+  description: 複数のアイテムを一括承認してリソースを作成（トランザクション）
+  operationId: approveMultipleInterpretationItems
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: AI解釈ID
+      schema:
+        type: string
+        format: uuid
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas/ApproveMultipleItemsRequest.yaml'
+  responses:
+    '200':
+      description: Success
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ApproveMultipleItemsResponse.yaml'
+    '400':
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ErrorResponse.yaml'
+    '404':
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ErrorResponse.yaml'

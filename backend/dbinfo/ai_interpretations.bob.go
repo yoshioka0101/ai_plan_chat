@@ -19,7 +19,7 @@ var AiInterpretations = Table[
 			Name:      "id",
 			DBType:    "char(36)",
 			Default:   "",
-			Comment:   "AI解釈ID (UUID)",
+			Comment:   "AIè§£é‡ˆID (UUID)",
 			Nullable:  false,
 			Generated: false,
 			AutoIncr:  false,
@@ -28,7 +28,7 @@ var AiInterpretations = Table[
 			Name:      "user_id",
 			DBType:    "char(36)",
 			Default:   "",
-			Comment:   "ユーザーID",
+			Comment:   "ãƒ¦ãƒ¼ã‚¶ãƒ¼ID",
 			Nullable:  false,
 			Generated: false,
 			AutoIncr:  false,
@@ -37,7 +37,7 @@ var AiInterpretations = Table[
 			Name:      "input_text",
 			DBType:    "text",
 			Default:   "",
-			Comment:   "ユーザーが入力した自然言語テキスト",
+			Comment:   "ãƒ¦ãƒ¼ã‚¶ãƒ¼ã\u0081Œå…¥åŠ›ã\u0081—ã\u0081Ÿè‡ªç„¶è¨€èªžãƒ†ã‚\u00adã‚¹ãƒˆ",
 			Nullable:  false,
 			Generated: false,
 			AutoIncr:  false,
@@ -46,8 +46,17 @@ var AiInterpretations = Table[
 			Name:      "structured_result",
 			DBType:    "json",
 			Default:   "",
-			Comment:   "AI解析結果のJSON構造",
+			Comment:   "AIè§£æž\u0090çµ\u0090æžœã\u0081®JSONæ§‹é€\u00a0",
 			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
+		OriginalResult: column{
+			Name:      "original_result",
+			DBType:    "json",
+			Default:   "",
+			Comment:   "AI提案の原本（レビュー前）",
+			Nullable:  true,
 			Generated: false,
 			AutoIncr:  false,
 		},
@@ -55,7 +64,7 @@ var AiInterpretations = Table[
 			Name:      "ai_model",
 			DBType:    "varchar(100)",
 			Default:   "gemini-flash",
-			Comment:   "使用AIモデル名",
+			Comment:   "ä½¿ç”¨AIãƒ¢ãƒ‡ãƒ«å\u0090\u008d",
 			Nullable:  false,
 			Generated: false,
 			AutoIncr:  false,
@@ -64,7 +73,7 @@ var AiInterpretations = Table[
 			Name:      "ai_prompt_tokens",
 			DBType:    "int",
 			Default:   "",
-			Comment:   "入力トークン数",
+			Comment:   "å…¥åŠ›ãƒˆãƒ¼ã‚¯ãƒ³æ•°",
 			Nullable:  true,
 			Generated: false,
 			AutoIncr:  false,
@@ -73,7 +82,7 @@ var AiInterpretations = Table[
 			Name:      "ai_completion_tokens",
 			DBType:    "int",
 			Default:   "",
-			Comment:   "出力トークン数",
+			Comment:   "å‡ºåŠ›ãƒˆãƒ¼ã‚¯ãƒ³æ•°",
 			Nullable:  true,
 			Generated: false,
 			AutoIncr:  false,
@@ -82,7 +91,7 @@ var AiInterpretations = Table[
 			Name:      "created_at",
 			DBType:    "timestamp",
 			Default:   "CURRENT_TIMESTAMP",
-			Comment:   "解析実行日時",
+			Comment:   "è§£æž\u0090å®Ÿè¡Œæ—¥æ™‚",
 			Nullable:  false,
 			Generated: false,
 			AutoIncr:  false,
@@ -151,7 +160,7 @@ var AiInterpretations = Table[
 		},
 	},
 
-	Comment: "AI解析履歴",
+	Comment: "AIè§£æž\u0090å±¥æ\u00ad´",
 }
 
 type aiInterpretationColumns struct {
@@ -159,6 +168,7 @@ type aiInterpretationColumns struct {
 	UserID             column
 	InputText          column
 	StructuredResult   column
+	OriginalResult     column
 	AiModel            column
 	AiPromptTokens     column
 	AiCompletionTokens column
@@ -167,7 +177,7 @@ type aiInterpretationColumns struct {
 
 func (c aiInterpretationColumns) AsSlice() []column {
 	return []column{
-		c.ID, c.UserID, c.InputText, c.StructuredResult, c.AiModel, c.AiPromptTokens, c.AiCompletionTokens, c.CreatedAt,
+		c.ID, c.UserID, c.InputText, c.StructuredResult, c.OriginalResult, c.AiModel, c.AiPromptTokens, c.AiCompletionTokens, c.CreatedAt,
 	}
 }
 

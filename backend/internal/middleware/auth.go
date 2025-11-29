@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -99,6 +100,16 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 			c.Set("jti", jti)
 		}
 
+		// Go標準のcontextにもユーザー情報を設定
+		ctx = context.WithValue(ctx, "user_id", userID)
+		if email, ok := claims["email"].(string); ok {
+			ctx = context.WithValue(ctx, "email", email)
+		}
+		if jti, ok := claims["jti"].(string); ok {
+			ctx = context.WithValue(ctx, "jti", jti)
+		}
+		c.Request = c.Request.WithContext(ctx)
+
 		m.logger.InfoContext(ctx, "User authenticated",
 			slog.String("user_id", userID),
 		)
@@ -161,6 +172,16 @@ func (m *AuthMiddleware) OptionalAuth() gin.HandlerFunc {
 			if jti, ok := claims["jti"].(string); ok {
 				c.Set("jti", jti)
 			}
+
+			// Go標準のcontextにもユーザー情報を設定
+			ctx = context.WithValue(ctx, "user_id", userID)
+			if email, ok := claims["email"].(string); ok {
+				ctx = context.WithValue(ctx, "email", email)
+			}
+			if jti, ok := claims["jti"].(string); ok {
+				ctx = context.WithValue(ctx, "jti", jti)
+			}
+			c.Request = c.Request.WithContext(ctx)
 
 			m.logger.InfoContext(ctx, "User authenticated (optional)",
 				slog.String("user_id", userID),

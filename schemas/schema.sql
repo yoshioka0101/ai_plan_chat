@@ -36,6 +36,7 @@ CREATE TABLE `ai_interpretations` (
   `user_id` char(36) NOT NULL COMMENT 'ユーザーID',
   `input_text` text NOT NULL COMMENT 'ユーザーが入力した自然言語テキスト',
   `structured_result` json NOT NULL COMMENT 'AI解析結果のJSON構造',
+  `original_result` json NULL COMMENT 'AI提案の原本（レビュー前）',
   `ai_model` varchar(100) NOT NULL DEFAULT 'gemini-flash' COMMENT '使用AIモデル名',
   `ai_prompt_tokens` int NULL COMMENT '入力トークン数',
   `ai_completion_tokens` int NULL COMMENT '出力トークン数',
@@ -45,6 +46,28 @@ CREATE TABLE `ai_interpretations` (
   KEY `idx_ai_interpretations_type` ((cast(json_unquote(json_extract(`structured_result`, '$.type')) as char(50) charset utf8mb4))),
   CONSTRAINT `fk_ai_interpretations_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI解析履歴';
+
+-- interpretation_items（AI解釈アイテム - レビュー対象）
+CREATE TABLE `interpretation_items` (
+  `id` char(36) NOT NULL COMMENT 'アイテムID (UUID)',
+  `interpretation_id` char(36) NOT NULL COMMENT 'AI解釈ID',
+  `item_index` int NOT NULL COMMENT '結果内のindex',
+  `resource_type` varchar(20) NOT NULL COMMENT 'リソースタイプ (task/event/wallet)',
+  `resource_id` char(36) NULL COMMENT '作成済みリソースID',
+  `status` varchar(20) NOT NULL DEFAULT 'pending' COMMENT 'ステータス (pending/created)',
+  `data` json NOT NULL COMMENT '編集後のアイテム内容',
+  `original_data` json NOT NULL COMMENT 'AI提案の原本',
+  `reviewed_at` timestamp NULL COMMENT 'レビュー日時',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '作成日時',
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新日時',
+  PRIMARY KEY (`id`),
+  KEY `idx_interpretation_items_interpretation` (`interpretation_id`, `item_index`),
+  KEY `idx_interpretation_items_status` (`interpretation_id`, `status`),
+  KEY `idx_interpretation_items_resource` (`resource_type`, `resource_id`),
+  CONSTRAINT `fk_interpretation_items_interpretation` FOREIGN KEY (`interpretation_id`) REFERENCES `ai_interpretations` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `chk_interpretation_items_resource_type` CHECK (`resource_type` IN ('task', 'event', 'wallet')),
+  CONSTRAINT `chk_interpretation_items_status` CHECK (`status` IN ('pending', 'created'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI解釈アイテム（レビュー対象）';
 
 -- tasks（タスク）
 CREATE TABLE `tasks` (

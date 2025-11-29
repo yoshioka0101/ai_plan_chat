@@ -6,11 +6,19 @@ properties:
     format: uuid
     description: タスクID
     pattern: '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+  user_id:
+    type: string
+    format: uuid
+    description: ユーザーID
   title:
     type: string
     description: タスクのタイトル
     minLength: 1
     maxLength: 255
+  source:
+    type: string
+    enum: ['manual', 'ai']
+    description: 作成元
   description:
     type: string
     nullable: true
@@ -44,7 +52,9 @@ properties:
     description: 更新日時
 required:
   - id
+  - user_id
   - title
+  - source
   - status
   - created_at
   - updated_at

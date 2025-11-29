@@ -378,6 +378,177 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /interpretations/{id}/items:
+    get:
+      summary: GetInterpretationItems
+      description: AI解釈に紐づくアイテム一覧を取得
+      operationId: getInterpretationItems
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: AI解釈ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterpretationItemsResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /interpretations/{id}/approve-items:
+    post:
+      summary: ApproveMultipleInterpretationItems
+      description: 複数のアイテムを一括承認してリソースを作成（トランザクション）
+      operationId: approveMultipleInterpretationItems
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: AI解釈ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApproveMultipleItemsRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApproveMultipleItemsResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /interpretation-items/{id}:
+    get:
+      summary: GetInterpretationItem
+      description: アイテムの詳細取得
+      operationId: getInterpretationItem
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: アイテムID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterpretationItem'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      summary: UpdateInterpretationItem
+      description: アイテムのdata内容を編集（pending状態のみ）
+      operationId: updateInterpretationItem
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: アイテムID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateItemRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterpretationItem'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /interpretation-items/{id}/approve:
+    post:
+      summary: ApproveInterpretationItem
+      description: アイテムを承認してリソース（タスク等）を作成
+      operationId: approveInterpretationItem
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: アイテムID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApproveItemResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   securitySchemes:
     BearerAuth:
@@ -401,11 +572,21 @@ components:
           format: uuid
           description: タスクID
           pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        user_id:
+          type: string
+          format: uuid
+          description: ユーザーID
         title:
           type: string
           description: タスクのタイトル
           minLength: 1
           maxLength: 255
+        source:
+          type: string
+          enum:
+            - manual
+            - ai
+          description: 作成元
         description:
           type: string
           nullable: true
@@ -445,7 +626,9 @@ components:
           description: 更新日時
       required:
         - id
+        - user_id
         - title
+        - source
         - status
         - created_at
         - updated_at
@@ -707,3 +890,117 @@ components:
         - structured_result
         - ai_model
         - created_at
+    InterpretationItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: アイテムID
+        interpretation_id:
+          type: string
+          format: uuid
+          description: AI解釈ID
+        item_index:
+          type: integer
+          description: 結果内のindex
+        resource_type:
+          type: string
+          enum:
+            - task
+            - event
+            - wallet
+          description: リソースタイプ
+        resource_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: 作成済みリソースID（承認後に設定）
+        status:
+          type: string
+          enum:
+            - pending
+            - created
+          description: ステータス
+        data:
+          type: object
+          description: 編集後のアイテム内容（JSON）
+          additionalProperties: true
+        original_data:
+          type: object
+          description: AI提案の原本（JSON）
+          additionalProperties: true
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: レビュー日時
+        created_at:
+          type: string
+          format: date-time
+          description: 作成日時
+        updated_at:
+          type: string
+          format: date-time
+          description: 更新日時
+      required:
+        - id
+        - interpretation_id
+        - item_index
+        - resource_type
+        - status
+        - data
+        - original_data
+        - created_at
+        - updated_at
+    InterpretationItemsResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InterpretationItem'
+          description: アイテム一覧
+      required:
+        - items
+    UpdateItemRequest:
+      type: object
+      properties:
+        data:
+          type: object
+          description: 更新後のアイテム内容（JSON）
+          additionalProperties: true
+      required:
+        - data
+    ApproveItemResponse:
+      type: object
+      properties:
+        resource_id:
+          type: string
+          format: uuid
+          description: 作成されたリソースID
+      required:
+        - resource_id
+    ApproveMultipleItemsRequest:
+      type: object
+      properties:
+        item_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: 承認するアイテムIDの配列
+          minItems: 1
+      required:
+        - item_ids
+    ApproveMultipleItemsResponse:
+      type: object
+      properties:
+        resource_ids:
+          type: object
+          additionalProperties:
+            type: string
+            format: uuid
+          description: アイテムIDをキー、作成されたリソースIDを値とするマップ
+      required:
+        - resource_ids

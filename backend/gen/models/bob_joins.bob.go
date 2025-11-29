@@ -32,10 +32,11 @@ func (j joinSet[Q]) AliasedAs(alias string) joinSet[Q] {
 }
 
 type joins[Q dialect.Joinable] struct {
-	AiInterpretations joinSet[aiInterpretationJoins[Q]]
-	Tasks             joinSet[taskJoins[Q]]
-	UserAuths         joinSet[userAuthJoins[Q]]
-	Users             joinSet[userJoins[Q]]
+	AiInterpretations   joinSet[aiInterpretationJoins[Q]]
+	InterpretationItems joinSet[interpretationItemJoins[Q]]
+	Tasks               joinSet[taskJoins[Q]]
+	UserAuths           joinSet[userAuthJoins[Q]]
+	Users               joinSet[userJoins[Q]]
 }
 
 func buildJoinSet[Q interface{ aliasedAs(string) Q }, C any, F func(C, string) Q](c C, f F) joinSet[Q] {
@@ -48,10 +49,11 @@ func buildJoinSet[Q interface{ aliasedAs(string) Q }, C any, F func(C, string) Q
 
 func getJoins[Q dialect.Joinable]() joins[Q] {
 	return joins[Q]{
-		AiInterpretations: buildJoinSet[aiInterpretationJoins[Q]](AiInterpretations.Columns, buildAiInterpretationJoins),
-		Tasks:             buildJoinSet[taskJoins[Q]](Tasks.Columns, buildTaskJoins),
-		UserAuths:         buildJoinSet[userAuthJoins[Q]](UserAuths.Columns, buildUserAuthJoins),
-		Users:             buildJoinSet[userJoins[Q]](Users.Columns, buildUserJoins),
+		AiInterpretations:   buildJoinSet[aiInterpretationJoins[Q]](AiInterpretations.Columns, buildAiInterpretationJoins),
+		InterpretationItems: buildJoinSet[interpretationItemJoins[Q]](InterpretationItems.Columns, buildInterpretationItemJoins),
+		Tasks:               buildJoinSet[taskJoins[Q]](Tasks.Columns, buildTaskJoins),
+		UserAuths:           buildJoinSet[userAuthJoins[Q]](UserAuths.Columns, buildUserAuthJoins),
+		Users:               buildJoinSet[userJoins[Q]](Users.Columns, buildUserJoins),
 	}
 }
 

@@ -1,0 +1,11 @@
+type: object
+properties:
+  item_ids:
+    type: array
+    items:
+      type: string
+      format: uuid
+    description: 承認するアイテムIDの配列
+    minItems: 1
+required:
+  - item_ids

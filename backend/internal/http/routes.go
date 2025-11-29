@@ -13,15 +13,17 @@ type Server struct {
 	*handler.TaskHandler
 	*handler.AuthHandler
 	*handler.InterpretationHandler
+	*handler.InterpretationItemHandler
 }
 
 // NewServer は統合ハンドラーを作成します
-func NewServer(healthHandler *handler.HealthHandler, taskHandler *handler.TaskHandler, authHandler *handler.AuthHandler, interpretationHandler *handler.InterpretationHandler) *Server {
+func NewServer(healthHandler *handler.HealthHandler, taskHandler *handler.TaskHandler, authHandler *handler.AuthHandler, interpretationHandler *handler.InterpretationHandler, interpretationItemHandler *handler.InterpretationItemHandler) *Server {
 	return &Server{
-		HealthHandler:         healthHandler,
-		TaskHandler:           taskHandler,
-		AuthHandler:           authHandler,
-		InterpretationHandler: interpretationHandler,
+		HealthHandler:              healthHandler,
+		TaskHandler:                taskHandler,
+		AuthHandler:                authHandler,
+		InterpretationHandler:      interpretationHandler,
+		InterpretationItemHandler: interpretationItemHandler,
 	}
 }
 
@@ -53,6 +55,7 @@ func SetupRoutes(server *Server, authMiddleware *middleware.AuthMiddleware) *gin
 	{
 		// Task endpoints
 		tasks := v1.Group("/tasks")
+		tasks.Use(authMiddleware.RequireAuth())
 		{
 			tasks.GET("", server.TaskHandler.GetTaskList)
 			tasks.POST("", server.TaskHandler.CreateTask)
@@ -69,6 +72,17 @@ func SetupRoutes(server *Server, authMiddleware *middleware.AuthMiddleware) *gin
 			interpretations.POST("", server.InterpretationHandler.CreateInterpretation)
 			interpretations.GET("", server.InterpretationHandler.ListInterpretations)
 			interpretations.GET("/:id", server.InterpretationHandler.GetInterpretation)
+			interpretations.GET("/:id/items", server.InterpretationItemHandler.GetInterpretationItemsByInterpretationID)
+			interpretations.POST("/:id/approve-items", server.InterpretationItemHandler.ApproveMultipleItems)
+		}
+
+		// Interpretation Item endpoints
+		items := v1.Group("/interpretation-items")
+		items.Use(authMiddleware.RequireAuth())
+		{
+			items.GET("/:id", server.InterpretationItemHandler.GetInterpretationItem)
+			items.PATCH("/:id", server.InterpretationItemHandler.UpdateInterpretationItem)
+			items.POST("/:id/approve", server.InterpretationItemHandler.ApproveInterpretationItem)
 		}
 	}
 

@@ -43,6 +43,7 @@ type AiInterpretationTemplate struct {
 	UserID             func() string
 	InputText          func() string
 	StructuredResult   func() types.JSON[json.RawMessage]
+	OriginalResult     func() null.Val[types.JSON[json.RawMessage]]
 	AiModel            func() string
 	AiPromptTokens     func() null.Val[int32]
 	AiCompletionTokens func() null.Val[int32]
@@ -55,12 +56,17 @@ type AiInterpretationTemplate struct {
 }
 
 type aiInterpretationR struct {
-	User  *aiInterpretationRUserR
-	Tasks []*aiInterpretationRTasksR
+	User                              *aiInterpretationRUserR
+	InterpretationInterpretationItems []*aiInterpretationRInterpretationInterpretationItemsR
+	Tasks                             []*aiInterpretationRTasksR
 }
 
 type aiInterpretationRUserR struct {
 	o *UserTemplate
+}
+type aiInterpretationRInterpretationInterpretationItemsR struct {
+	number int
+	o      *InterpretationItemTemplate
 }
 type aiInterpretationRTasksR struct {
 	number int
@@ -82,6 +88,19 @@ func (t AiInterpretationTemplate) setModelRels(o *models.AiInterpretation) {
 		rel.R.AiInterpretations = append(rel.R.AiInterpretations, o)
 		o.UserID = rel.ID // h2
 		o.R.User = rel
+	}
+
+	if t.r.InterpretationInterpretationItems != nil {
+		rel := models.InterpretationItemSlice{}
+		for _, r := range t.r.InterpretationInterpretationItems {
+			related := r.o.BuildMany(r.number)
+			for _, rel := range related {
+				rel.InterpretationID = o.ID // h2
+				rel.R.InterpretationAiInterpretation = o
+			}
+			rel = append(rel, related...)
+		}
+		o.R.InterpretationInterpretationItems = rel
 	}
 
 	if t.r.Tasks != nil {
@@ -118,6 +137,10 @@ func (o AiInterpretationTemplate) BuildSetter() *models.AiInterpretationSetter {
 	if o.StructuredResult != nil {
 		val := o.StructuredResult()
 		m.StructuredResult = omit.From(val)
+	}
+	if o.OriginalResult != nil {
+		val := o.OriginalResult()
+		m.OriginalResult = omitnull.FromNull(val)
 	}
 	if o.AiModel != nil {
 		val := o.AiModel()
@@ -168,6 +191,9 @@ func (o AiInterpretationTemplate) Build() *models.AiInterpretation {
 	}
 	if o.StructuredResult != nil {
 		m.StructuredResult = o.StructuredResult()
+	}
+	if o.OriginalResult != nil {
+		m.OriginalResult = o.OriginalResult()
 	}
 	if o.AiModel != nil {
 		m.AiModel = o.AiModel()
@@ -225,6 +251,26 @@ func ensureCreatableAiInterpretation(m *models.AiInterpretationSetter) {
 func (o *AiInterpretationTemplate) insertOptRels(ctx context.Context, exec bob.Executor, m *models.AiInterpretation) error {
 	var err error
 
+	isInterpretationInterpretationItemsDone, _ := aiInterpretationRelInterpretationInterpretationItemsCtx.Value(ctx)
+	if !isInterpretationInterpretationItemsDone && o.r.InterpretationInterpretationItems != nil {
+		ctx = aiInterpretationRelInterpretationInterpretationItemsCtx.WithValue(ctx, true)
+		for _, r := range o.r.InterpretationInterpretationItems {
+			if r.o.alreadyPersisted {
+				m.R.InterpretationInterpretationItems = append(m.R.InterpretationInterpretationItems, r.o.Build())
+			} else {
+				rel1, err := r.o.CreateMany(ctx, exec, r.number)
+				if err != nil {
+					return err
+				}
+
+				err = m.AttachInterpretationInterpretationItems(ctx, exec, rel1...)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
 	isTasksDone, _ := aiInterpretationRelTasksCtx.Value(ctx)
 	if !isTasksDone && o.r.Tasks != nil {
 		ctx = aiInterpretationRelTasksCtx.WithValue(ctx, true)
@@ -232,12 +278,12 @@ func (o *AiInterpretationTemplate) insertOptRels(ctx context.Context, exec bob.E
 			if r.o.alreadyPersisted {
 				m.R.Tasks = append(m.R.Tasks, r.o.Build())
 			} else {
-				rel1, err := r.o.CreateMany(ctx, exec, r.number)
+				rel2, err := r.o.CreateMany(ctx, exec, r.number)
 				if err != nil {
 					return err
 				}
 
-				err = m.AttachTasks(ctx, exec, rel1...)
+				err = m.AttachTasks(ctx, exec, rel2...)
 				if err != nil {
 					return err
 				}
@@ -360,6 +406,7 @@ func (m aiInterpretationMods) RandomizeAllColumns(f *faker.Faker) AiInterpretati
 		AiInterpretationMods.RandomUserID(f),
 		AiInterpretationMods.RandomInputText(f),
 		AiInterpretationMods.RandomStructuredResult(f),
+		AiInterpretationMods.RandomOriginalResult(f),
 		AiInterpretationMods.RandomAiModel(f),
 		AiInterpretationMods.RandomAiPromptTokens(f),
 		AiInterpretationMods.RandomAiCompletionTokens(f),
@@ -487,6 +534,59 @@ func (m aiInterpretationMods) RandomStructuredResult(f *faker.Faker) AiInterpret
 	return AiInterpretationModFunc(func(_ context.Context, o *AiInterpretationTemplate) {
 		o.StructuredResult = func() types.JSON[json.RawMessage] {
 			return random_types_JSON_json_RawMessage_(f)
+		}
+	})
+}
+
+// Set the model columns to this value
+func (m aiInterpretationMods) OriginalResult(val null.Val[types.JSON[json.RawMessage]]) AiInterpretationMod {
+	return AiInterpretationModFunc(func(_ context.Context, o *AiInterpretationTemplate) {
+		o.OriginalResult = func() null.Val[types.JSON[json.RawMessage]] { return val }
+	})
+}
+
+// Set the Column from the function
+func (m aiInterpretationMods) OriginalResultFunc(f func() null.Val[types.JSON[json.RawMessage]]) AiInterpretationMod {
+	return AiInterpretationModFunc(func(_ context.Context, o *AiInterpretationTemplate) {
+		o.OriginalResult = f
+	})
+}
+
+// Clear any values for the column
+func (m aiInterpretationMods) UnsetOriginalResult() AiInterpretationMod {
+	return AiInterpretationModFunc(func(_ context.Context, o *AiInterpretationTemplate) {
+		o.OriginalResult = nil
+	})
+}
+
+// Generates a random value for the column using the given faker
+// if faker is nil, a default faker is used
+// The generated value is sometimes null
+func (m aiInterpretationMods) RandomOriginalResult(f *faker.Faker) AiInterpretationMod {
+	return AiInterpretationModFunc(func(_ context.Context, o *AiInterpretationTemplate) {
+		o.OriginalResult = func() null.Val[types.JSON[json.RawMessage]] {
+			if f == nil {
+				f = &defaultFaker
+			}
+
+			val := random_types_JSON_json_RawMessage_(f)
+			return null.From(val)
+		}
+	})
+}
+
+// Generates a random value for the column using the given faker
+// if faker is nil, a default faker is used
+// The generated value is never null
+func (m aiInterpretationMods) RandomOriginalResultNotNull(f *faker.Faker) AiInterpretationMod {
+	return AiInterpretationModFunc(func(_ context.Context, o *AiInterpretationTemplate) {
+		o.OriginalResult = func() null.Val[types.JSON[json.RawMessage]] {
+			if f == nil {
+				f = &defaultFaker
+			}
+
+			val := random_types_JSON_json_RawMessage_(f)
+			return null.From(val)
 		}
 	})
 }
@@ -700,6 +800,54 @@ func (m aiInterpretationMods) WithExistingUser(em *models.User) AiInterpretation
 func (m aiInterpretationMods) WithoutUser() AiInterpretationMod {
 	return AiInterpretationModFunc(func(ctx context.Context, o *AiInterpretationTemplate) {
 		o.r.User = nil
+	})
+}
+
+func (m aiInterpretationMods) WithInterpretationInterpretationItems(number int, related *InterpretationItemTemplate) AiInterpretationMod {
+	return AiInterpretationModFunc(func(ctx context.Context, o *AiInterpretationTemplate) {
+		o.r.InterpretationInterpretationItems = []*aiInterpretationRInterpretationInterpretationItemsR{{
+			number: number,
+			o:      related,
+		}}
+	})
+}
+
+func (m aiInterpretationMods) WithNewInterpretationInterpretationItems(number int, mods ...InterpretationItemMod) AiInterpretationMod {
+	return AiInterpretationModFunc(func(ctx context.Context, o *AiInterpretationTemplate) {
+		related := o.f.NewInterpretationItemWithContext(ctx, mods...)
+		m.WithInterpretationInterpretationItems(number, related).Apply(ctx, o)
+	})
+}
+
+func (m aiInterpretationMods) AddInterpretationInterpretationItems(number int, related *InterpretationItemTemplate) AiInterpretationMod {
+	return AiInterpretationModFunc(func(ctx context.Context, o *AiInterpretationTemplate) {
+		o.r.InterpretationInterpretationItems = append(o.r.InterpretationInterpretationItems, &aiInterpretationRInterpretationInterpretationItemsR{
+			number: number,
+			o:      related,
+		})
+	})
+}
+
+func (m aiInterpretationMods) AddNewInterpretationInterpretationItems(number int, mods ...InterpretationItemMod) AiInterpretationMod {
+	return AiInterpretationModFunc(func(ctx context.Context, o *AiInterpretationTemplate) {
+		related := o.f.NewInterpretationItemWithContext(ctx, mods...)
+		m.AddInterpretationInterpretationItems(number, related).Apply(ctx, o)
+	})
+}
+
+func (m aiInterpretationMods) AddExistingInterpretationInterpretationItems(existingModels ...*models.InterpretationItem) AiInterpretationMod {
+	return AiInterpretationModFunc(func(ctx context.Context, o *AiInterpretationTemplate) {
+		for _, em := range existingModels {
+			o.r.InterpretationInterpretationItems = append(o.r.InterpretationInterpretationItems, &aiInterpretationRInterpretationInterpretationItemsR{
+				o: o.f.FromExistingInterpretationItem(em),
+			})
+		}
+	})
+}
+
+func (m aiInterpretationMods) WithoutInterpretationInterpretationItems() AiInterpretationMod {
+	return AiInterpretationModFunc(func(ctx context.Context, o *AiInterpretationTemplate) {
+		o.r.InterpretationInterpretationItems = nil
 	})
 }
 

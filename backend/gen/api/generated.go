@@ -56,6 +56,19 @@ const (
 	EditTaskRequestStatusTodo       EditTaskRequestStatus = "todo"
 )
 
+// Defines values for InterpretationItemResourceType.
+const (
+	InterpretationItemResourceTypeEvent  InterpretationItemResourceType = "event"
+	InterpretationItemResourceTypeTask   InterpretationItemResourceType = "task"
+	InterpretationItemResourceTypeWallet InterpretationItemResourceType = "wallet"
+)
+
+// Defines values for InterpretationItemStatus.
+const (
+	Created InterpretationItemStatus = "created"
+	Pending InterpretationItemStatus = "pending"
+)
+
 // Defines values for InterpretationResponseType.
 const (
 	InterpretationResponseTypeEvent    InterpretationResponseType = "event"
@@ -71,6 +84,12 @@ const (
 	TaskPriorityHigh   TaskPriority = "high"
 	TaskPriorityLow    TaskPriority = "low"
 	TaskPriorityMedium TaskPriority = "medium"
+)
+
+// Defines values for TaskSource.
+const (
+	Ai     TaskSource = "ai"
+	Manual TaskSource = "manual"
 )
 
 // Defines values for TaskStatus.
@@ -96,12 +115,12 @@ const (
 
 // Defines values for ListInterpretationsParamsType.
 const (
-	Event    ListInterpretationsParamsType = "event"
-	Expense  ListInterpretationsParamsType = "expense"
-	Note     ListInterpretationsParamsType = "note"
-	Reminder ListInterpretationsParamsType = "reminder"
-	Todo     ListInterpretationsParamsType = "todo"
-	Unknown  ListInterpretationsParamsType = "unknown"
+	ListInterpretationsParamsTypeEvent    ListInterpretationsParamsType = "event"
+	ListInterpretationsParamsTypeExpense  ListInterpretationsParamsType = "expense"
+	ListInterpretationsParamsTypeNote     ListInterpretationsParamsType = "note"
+	ListInterpretationsParamsTypeReminder ListInterpretationsParamsType = "reminder"
+	ListInterpretationsParamsTypeTodo     ListInterpretationsParamsType = "todo"
+	ListInterpretationsParamsTypeUnknown  ListInterpretationsParamsType = "unknown"
 )
 
 // AIInterpretation defines model for AIInterpretation.
@@ -157,6 +176,24 @@ type AIInterpretationStructuredResultMetadataPriority string
 
 // AIInterpretationStructuredResultType アイテムタイプ（現在はtodoのみサポート）
 type AIInterpretationStructuredResultType string
+
+// ApproveItemResponse defines model for ApproveItemResponse.
+type ApproveItemResponse struct {
+	// ResourceId 作成されたリソースID
+	ResourceId openapi_types.UUID `json:"resource_id"`
+}
+
+// ApproveMultipleItemsRequest defines model for ApproveMultipleItemsRequest.
+type ApproveMultipleItemsRequest struct {
+	// ItemIds 承認するアイテムIDの配列
+	ItemIds []openapi_types.UUID `json:"item_ids"`
+}
+
+// ApproveMultipleItemsResponse defines model for ApproveMultipleItemsResponse.
+type ApproveMultipleItemsResponse struct {
+	// ResourceIds アイテムIDをキー、作成されたリソースIDを値とするマップ
+	ResourceIds map[string]openapi_types.UUID `json:"resource_ids"`
+}
 
 // AuthResponse defines model for AuthResponse.
 type AuthResponse struct {
@@ -230,6 +267,54 @@ type HealthResponse struct {
 	Status string `json:"status"`
 }
 
+// InterpretationItem defines model for InterpretationItem.
+type InterpretationItem struct {
+	// CreatedAt 作成日時
+	CreatedAt time.Time `json:"created_at"`
+
+	// Data 編集後のアイテム内容（JSON）
+	Data map[string]interface{} `json:"data"`
+
+	// Id アイテムID
+	Id openapi_types.UUID `json:"id"`
+
+	// InterpretationId AI解釈ID
+	InterpretationId openapi_types.UUID `json:"interpretation_id"`
+
+	// ItemIndex 結果内のindex
+	ItemIndex int `json:"item_index"`
+
+	// OriginalData AI提案の原本（JSON）
+	OriginalData map[string]interface{} `json:"original_data"`
+
+	// ResourceId 作成済みリソースID（承認後に設定）
+	ResourceId *openapi_types.UUID `json:"resource_id"`
+
+	// ResourceType リソースタイプ
+	ResourceType InterpretationItemResourceType `json:"resource_type"`
+
+	// ReviewedAt レビュー日時
+	ReviewedAt *time.Time `json:"reviewed_at"`
+
+	// Status ステータス
+	Status InterpretationItemStatus `json:"status"`
+
+	// UpdatedAt 更新日時
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// InterpretationItemResourceType リソースタイプ
+type InterpretationItemResourceType string
+
+// InterpretationItemStatus ステータス
+type InterpretationItemStatus string
+
+// InterpretationItemsResponse defines model for InterpretationItemsResponse.
+type InterpretationItemsResponse struct {
+	// Items アイテム一覧
+	Items []InterpretationItem `json:"items"`
+}
+
 // InterpretationResponse defines model for InterpretationResponse.
 type InterpretationResponse struct {
 	Interpretation AIInterpretation `json:"interpretation"`
@@ -264,6 +349,9 @@ type Task struct {
 	// Priority タスクの優先度
 	Priority *TaskPriority `json:"priority"`
 
+	// Source 作成元
+	Source TaskSource `json:"source"`
+
 	// Status タスクの状態
 	Status TaskStatus `json:"status"`
 
@@ -272,13 +360,25 @@ type Task struct {
 
 	// UpdatedAt 更新日時
 	UpdatedAt time.Time `json:"updated_at"`
+
+	// UserId ユーザーID
+	UserId openapi_types.UUID `json:"user_id"`
 }
 
 // TaskPriority タスクの優先度
 type TaskPriority string
 
+// TaskSource 作成元
+type TaskSource string
+
 // TaskStatus タスクの状態
 type TaskStatus string
+
+// UpdateItemRequest defines model for UpdateItemRequest.
+type UpdateItemRequest struct {
+	// Data 更新後のアイテム内容（JSON）
+	Data map[string]interface{} `json:"data"`
+}
 
 // UpdateTaskRequest defines model for UpdateTaskRequest.
 type UpdateTaskRequest struct {
@@ -343,8 +443,14 @@ type ListInterpretationsParamsType string
 // GoogleCallbackJSONRequestBody defines body for GoogleCallback for application/json ContentType.
 type GoogleCallbackJSONRequestBody GoogleCallbackJSONBody
 
+// UpdateInterpretationItemJSONRequestBody defines body for UpdateInterpretationItem for application/json ContentType.
+type UpdateInterpretationItemJSONRequestBody = UpdateItemRequest
+
 // CreateInterpretationJSONRequestBody defines body for CreateInterpretation for application/json ContentType.
 type CreateInterpretationJSONRequestBody = CreateInterpretationRequest
+
+// ApproveMultipleInterpretationItemsJSONRequestBody defines body for ApproveMultipleInterpretationItems for application/json ContentType.
+type ApproveMultipleInterpretationItemsJSONRequestBody = ApproveMultipleItemsRequest
 
 // CreateTaskJSONRequestBody defines body for CreateTask for application/json ContentType.
 type CreateTaskJSONRequestBody = CreateTaskRequest
@@ -436,6 +542,17 @@ type ClientInterface interface {
 	// GetHealth request
 	GetHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetInterpretationItem request
+	GetInterpretationItem(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateInterpretationItemWithBody request with any body
+	UpdateInterpretationItemWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateInterpretationItem(ctx context.Context, id openapi_types.UUID, body UpdateInterpretationItemJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ApproveInterpretationItem request
+	ApproveInterpretationItem(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListInterpretations request
 	ListInterpretations(ctx context.Context, params *ListInterpretationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -446,6 +563,14 @@ type ClientInterface interface {
 
 	// GetInterpretation request
 	GetInterpretation(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ApproveMultipleInterpretationItemsWithBody request with any body
+	ApproveMultipleInterpretationItemsWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ApproveMultipleInterpretationItems(ctx context.Context, id openapi_types.UUID, body ApproveMultipleInterpretationItemsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetInterpretationItems request
+	GetInterpretationItems(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetTaskList request
 	GetTaskList(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -508,6 +633,54 @@ func (c *Client) GetHealth(ctx context.Context, reqEditors ...RequestEditorFn) (
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetInterpretationItem(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetInterpretationItemRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateInterpretationItemWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateInterpretationItemRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateInterpretationItem(ctx context.Context, id openapi_types.UUID, body UpdateInterpretationItemJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateInterpretationItemRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ApproveInterpretationItem(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewApproveInterpretationItemRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListInterpretations(ctx context.Context, params *ListInterpretationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListInterpretationsRequest(c.Server, params)
 	if err != nil {
@@ -546,6 +719,42 @@ func (c *Client) CreateInterpretation(ctx context.Context, body CreateInterpreta
 
 func (c *Client) GetInterpretation(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetInterpretationRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ApproveMultipleInterpretationItemsWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewApproveMultipleInterpretationItemsRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ApproveMultipleInterpretationItems(ctx context.Context, id openapi_types.UUID, body ApproveMultipleInterpretationItemsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewApproveMultipleInterpretationItemsRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetInterpretationItems(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetInterpretationItemsRequest(c.Server, id)
 	if err != nil {
 		return nil, err
 	}
@@ -731,6 +940,121 @@ func NewGetHealthRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
+// NewGetInterpretationItemRequest generates requests for GetInterpretationItem
+func NewGetInterpretationItemRequest(server string, id openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/interpretation-items/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateInterpretationItemRequest calls the generic UpdateInterpretationItem builder with application/json body
+func NewUpdateInterpretationItemRequest(server string, id openapi_types.UUID, body UpdateInterpretationItemJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateInterpretationItemRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewUpdateInterpretationItemRequestWithBody generates requests for UpdateInterpretationItem with any type of body
+func NewUpdateInterpretationItemRequestWithBody(server string, id openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/interpretation-items/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewApproveInterpretationItemRequest generates requests for ApproveInterpretationItem
+func NewApproveInterpretationItemRequest(server string, id openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/interpretation-items/%s/approve", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListInterpretationsRequest generates requests for ListInterpretations
 func NewListInterpretationsRequest(server string, params *ListInterpretationsParams) (*http.Request, error) {
 	var err error
@@ -869,6 +1193,87 @@ func NewGetInterpretationRequest(server string, id openapi_types.UUID) (*http.Re
 	}
 
 	operationPath := fmt.Sprintf("/interpretations/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewApproveMultipleInterpretationItemsRequest calls the generic ApproveMultipleInterpretationItems builder with application/json body
+func NewApproveMultipleInterpretationItemsRequest(server string, id openapi_types.UUID, body ApproveMultipleInterpretationItemsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewApproveMultipleInterpretationItemsRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewApproveMultipleInterpretationItemsRequestWithBody generates requests for ApproveMultipleInterpretationItems with any type of body
+func NewApproveMultipleInterpretationItemsRequestWithBody(server string, id openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/interpretations/%s/approve-items", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetInterpretationItemsRequest generates requests for GetInterpretationItems
+func NewGetInterpretationItemsRequest(server string, id openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/interpretations/%s/items", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1166,6 +1571,17 @@ type ClientWithResponsesInterface interface {
 	// GetHealthWithResponse request
 	GetHealthWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetHealthResponse, error)
 
+	// GetInterpretationItemWithResponse request
+	GetInterpretationItemWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetInterpretationItemResponse, error)
+
+	// UpdateInterpretationItemWithBodyWithResponse request with any body
+	UpdateInterpretationItemWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateInterpretationItemResponse, error)
+
+	UpdateInterpretationItemWithResponse(ctx context.Context, id openapi_types.UUID, body UpdateInterpretationItemJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateInterpretationItemResponse, error)
+
+	// ApproveInterpretationItemWithResponse request
+	ApproveInterpretationItemWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*ApproveInterpretationItemResponse, error)
+
 	// ListInterpretationsWithResponse request
 	ListInterpretationsWithResponse(ctx context.Context, params *ListInterpretationsParams, reqEditors ...RequestEditorFn) (*ListInterpretationsResponse, error)
 
@@ -1176,6 +1592,14 @@ type ClientWithResponsesInterface interface {
 
 	// GetInterpretationWithResponse request
 	GetInterpretationWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetInterpretationResponse, error)
+
+	// ApproveMultipleInterpretationItemsWithBodyWithResponse request with any body
+	ApproveMultipleInterpretationItemsWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApproveMultipleInterpretationItemsResponse, error)
+
+	ApproveMultipleInterpretationItemsWithResponse(ctx context.Context, id openapi_types.UUID, body ApproveMultipleInterpretationItemsJSONRequestBody, reqEditors ...RequestEditorFn) (*ApproveMultipleInterpretationItemsResponse, error)
+
+	// GetInterpretationItemsWithResponse request
+	GetInterpretationItemsWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetInterpretationItemsResponse, error)
 
 	// GetTaskListWithResponse request
 	GetTaskListWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetTaskListResponse, error)
@@ -1242,6 +1666,78 @@ func (r GetHealthResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetHealthResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetInterpretationItemResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *InterpretationItem
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetInterpretationItemResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetInterpretationItemResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateInterpretationItemResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *InterpretationItem
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateInterpretationItemResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateInterpretationItemResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ApproveInterpretationItemResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ApproveItemResponse
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ApproveInterpretationItemResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ApproveInterpretationItemResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1322,6 +1818,54 @@ func (r GetInterpretationResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetInterpretationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ApproveMultipleInterpretationItemsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ApproveMultipleItemsResponse
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ApproveMultipleInterpretationItemsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ApproveMultipleInterpretationItemsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetInterpretationItemsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *InterpretationItemsResponse
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetInterpretationItemsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetInterpretationItemsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1495,6 +2039,41 @@ func (c *ClientWithResponses) GetHealthWithResponse(ctx context.Context, reqEdit
 	return ParseGetHealthResponse(rsp)
 }
 
+// GetInterpretationItemWithResponse request returning *GetInterpretationItemResponse
+func (c *ClientWithResponses) GetInterpretationItemWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetInterpretationItemResponse, error) {
+	rsp, err := c.GetInterpretationItem(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetInterpretationItemResponse(rsp)
+}
+
+// UpdateInterpretationItemWithBodyWithResponse request with arbitrary body returning *UpdateInterpretationItemResponse
+func (c *ClientWithResponses) UpdateInterpretationItemWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateInterpretationItemResponse, error) {
+	rsp, err := c.UpdateInterpretationItemWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateInterpretationItemResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateInterpretationItemWithResponse(ctx context.Context, id openapi_types.UUID, body UpdateInterpretationItemJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateInterpretationItemResponse, error) {
+	rsp, err := c.UpdateInterpretationItem(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateInterpretationItemResponse(rsp)
+}
+
+// ApproveInterpretationItemWithResponse request returning *ApproveInterpretationItemResponse
+func (c *ClientWithResponses) ApproveInterpretationItemWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*ApproveInterpretationItemResponse, error) {
+	rsp, err := c.ApproveInterpretationItem(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseApproveInterpretationItemResponse(rsp)
+}
+
 // ListInterpretationsWithResponse request returning *ListInterpretationsResponse
 func (c *ClientWithResponses) ListInterpretationsWithResponse(ctx context.Context, params *ListInterpretationsParams, reqEditors ...RequestEditorFn) (*ListInterpretationsResponse, error) {
 	rsp, err := c.ListInterpretations(ctx, params, reqEditors...)
@@ -1528,6 +2107,32 @@ func (c *ClientWithResponses) GetInterpretationWithResponse(ctx context.Context,
 		return nil, err
 	}
 	return ParseGetInterpretationResponse(rsp)
+}
+
+// ApproveMultipleInterpretationItemsWithBodyWithResponse request with arbitrary body returning *ApproveMultipleInterpretationItemsResponse
+func (c *ClientWithResponses) ApproveMultipleInterpretationItemsWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApproveMultipleInterpretationItemsResponse, error) {
+	rsp, err := c.ApproveMultipleInterpretationItemsWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseApproveMultipleInterpretationItemsResponse(rsp)
+}
+
+func (c *ClientWithResponses) ApproveMultipleInterpretationItemsWithResponse(ctx context.Context, id openapi_types.UUID, body ApproveMultipleInterpretationItemsJSONRequestBody, reqEditors ...RequestEditorFn) (*ApproveMultipleInterpretationItemsResponse, error) {
+	rsp, err := c.ApproveMultipleInterpretationItems(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseApproveMultipleInterpretationItemsResponse(rsp)
+}
+
+// GetInterpretationItemsWithResponse request returning *GetInterpretationItemsResponse
+func (c *ClientWithResponses) GetInterpretationItemsWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetInterpretationItemsResponse, error) {
+	rsp, err := c.GetInterpretationItems(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetInterpretationItemsResponse(rsp)
 }
 
 // GetTaskListWithResponse request returning *GetTaskListResponse
@@ -1674,6 +2279,126 @@ func ParseGetHealthResponse(rsp *http.Response) (*GetHealthResponse, error) {
 	return response, nil
 }
 
+// ParseGetInterpretationItemResponse parses an HTTP response from a GetInterpretationItemWithResponse call
+func ParseGetInterpretationItemResponse(rsp *http.Response) (*GetInterpretationItemResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetInterpretationItemResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InterpretationItem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateInterpretationItemResponse parses an HTTP response from a UpdateInterpretationItemWithResponse call
+func ParseUpdateInterpretationItemResponse(rsp *http.Response) (*UpdateInterpretationItemResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateInterpretationItemResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InterpretationItem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseApproveInterpretationItemResponse parses an HTTP response from a ApproveInterpretationItemWithResponse call
+func ParseApproveInterpretationItemResponse(rsp *http.Response) (*ApproveInterpretationItemResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ApproveInterpretationItemResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ApproveItemResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListInterpretationsResponse parses an HTTP response from a ListInterpretationsWithResponse call
 func ParseListInterpretationsResponse(rsp *http.Response) (*ListInterpretationsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -1814,6 +2539,86 @@ func ParseGetInterpretationResponse(rsp *http.Response) (*GetInterpretationRespo
 			return nil, err
 		}
 		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseApproveMultipleInterpretationItemsResponse parses an HTTP response from a ApproveMultipleInterpretationItemsWithResponse call
+func ParseApproveMultipleInterpretationItemsResponse(rsp *http.Response) (*ApproveMultipleInterpretationItemsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ApproveMultipleInterpretationItemsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ApproveMultipleItemsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetInterpretationItemsResponse parses an HTTP response from a GetInterpretationItemsWithResponse call
+func ParseGetInterpretationItemsResponse(rsp *http.Response) (*GetInterpretationItemsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetInterpretationItemsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InterpretationItemsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -2047,6 +2852,15 @@ type ServerInterface interface {
 	// GetHealth
 	// (GET /health)
 	GetHealth(c *gin.Context)
+	// GetInterpretationItem
+	// (GET /interpretation-items/{id})
+	GetInterpretationItem(c *gin.Context, id openapi_types.UUID)
+	// UpdateInterpretationItem
+	// (PATCH /interpretation-items/{id})
+	UpdateInterpretationItem(c *gin.Context, id openapi_types.UUID)
+	// ApproveInterpretationItem
+	// (POST /interpretation-items/{id}/approve)
+	ApproveInterpretationItem(c *gin.Context, id openapi_types.UUID)
 	// ListInterpretations
 	// (GET /interpretations)
 	ListInterpretations(c *gin.Context, params ListInterpretationsParams)
@@ -2056,6 +2870,12 @@ type ServerInterface interface {
 	// GetInterpretation
 	// (GET /interpretations/{id})
 	GetInterpretation(c *gin.Context, id openapi_types.UUID)
+	// ApproveMultipleInterpretationItems
+	// (POST /interpretations/{id}/approve-items)
+	ApproveMultipleInterpretationItems(c *gin.Context, id openapi_types.UUID)
+	// GetInterpretationItems
+	// (GET /interpretations/{id}/items)
+	GetInterpretationItems(c *gin.Context, id openapi_types.UUID)
 	// GetTaskList
 	// (GET /tasks)
 	GetTaskList(c *gin.Context)
@@ -2109,6 +2929,78 @@ func (siw *ServerInterfaceWrapper) GetHealth(c *gin.Context) {
 	}
 
 	siw.Handler.GetHealth(c)
+}
+
+// GetInterpretationItem operation middleware
+func (siw *ServerInterfaceWrapper) GetInterpretationItem(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetInterpretationItem(c, id)
+}
+
+// UpdateInterpretationItem operation middleware
+func (siw *ServerInterfaceWrapper) UpdateInterpretationItem(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UpdateInterpretationItem(c, id)
+}
+
+// ApproveInterpretationItem operation middleware
+func (siw *ServerInterfaceWrapper) ApproveInterpretationItem(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ApproveInterpretationItem(c, id)
 }
 
 // ListInterpretations operation middleware
@@ -2194,6 +3086,54 @@ func (siw *ServerInterfaceWrapper) GetInterpretation(c *gin.Context) {
 	}
 
 	siw.Handler.GetInterpretation(c, id)
+}
+
+// ApproveMultipleInterpretationItems operation middleware
+func (siw *ServerInterfaceWrapper) ApproveMultipleInterpretationItems(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ApproveMultipleInterpretationItems(c, id)
+}
+
+// GetInterpretationItems operation middleware
+func (siw *ServerInterfaceWrapper) GetInterpretationItems(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetInterpretationItems(c, id)
 }
 
 // GetTaskList operation middleware
@@ -2347,9 +3287,14 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 
 	router.POST(options.BaseURL+"/auth/google/callback", wrapper.GoogleCallback)
 	router.GET(options.BaseURL+"/health", wrapper.GetHealth)
+	router.GET(options.BaseURL+"/interpretation-items/:id", wrapper.GetInterpretationItem)
+	router.PATCH(options.BaseURL+"/interpretation-items/:id", wrapper.UpdateInterpretationItem)
+	router.POST(options.BaseURL+"/interpretation-items/:id/approve", wrapper.ApproveInterpretationItem)
 	router.GET(options.BaseURL+"/interpretations", wrapper.ListInterpretations)
 	router.POST(options.BaseURL+"/interpretations", wrapper.CreateInterpretation)
 	router.GET(options.BaseURL+"/interpretations/:id", wrapper.GetInterpretation)
+	router.POST(options.BaseURL+"/interpretations/:id/approve-items", wrapper.ApproveMultipleInterpretationItems)
+	router.GET(options.BaseURL+"/interpretations/:id/items", wrapper.GetInterpretationItems)
 	router.GET(options.BaseURL+"/tasks", wrapper.GetTaskList)
 	router.POST(options.BaseURL+"/tasks", wrapper.CreateTask)
 	router.DELETE(options.BaseURL+"/tasks/:id", wrapper.DeleteTask)

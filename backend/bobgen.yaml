@@ -6,10 +6,16 @@ mysql:
   output: ./gen/models
   pkgname: models
 
+  # Factory configuration
+  factory:
+    output: ./factory
+    models: github.com/yoshioka0101/ai_plan_chat/gen/models
+
   only:
     users:
     user_auths:
     ai_interpretations:
+    interpretation_items:
     tasks:
 
   # リレーションシップの生成を有効化

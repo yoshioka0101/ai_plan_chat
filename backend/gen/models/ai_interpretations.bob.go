@@ -35,6 +35,8 @@ type AiInterpretation struct {
 	InputText string `db:"input_text" `
 	// AIè§£æžçµæžœã®JSONæ§‹é€
 	StructuredResult types.JSON[json.RawMessage] `db:"structured_result" `
+	// AI提案の原本（レビュー前）
+	OriginalResult null.Val[types.JSON[json.RawMessage]] `db:"original_result" `
 	// ä½¿ç”¨AIãƒ¢ãƒ‡ãƒ«å
 	AiModel string `db:"ai_model" `
 	// å…¥åŠ›ãƒˆãƒ¼ã‚¯ãƒ³æ•°
@@ -59,20 +61,22 @@ type AiInterpretationsQuery = *mysql.ViewQuery[*AiInterpretation, AiInterpretati
 
 // aiInterpretationR is where relationships are stored.
 type aiInterpretationR struct {
-	User  *User     // fk_ai_interpretations_user
-	Tasks TaskSlice // fk_tasks_ai_interpretation
+	User                              *User                   // fk_ai_interpretations_user
+	InterpretationInterpretationItems InterpretationItemSlice // fk_interpretation_items_interpretation
+	Tasks                             TaskSlice               // fk_tasks_ai_interpretation
 }
 
 func buildAiInterpretationColumns(alias string) aiInterpretationColumns {
 	return aiInterpretationColumns{
 		ColumnsExpr: expr.NewColumnsExpr(
-			"id", "user_id", "input_text", "structured_result", "ai_model", "ai_prompt_tokens", "ai_completion_tokens", "created_at",
+			"id", "user_id", "input_text", "structured_result", "original_result", "ai_model", "ai_prompt_tokens", "ai_completion_tokens", "created_at",
 		).WithParent("ai_interpretations"),
 		tableAlias:         alias,
 		ID:                 mysql.Quote(alias, "id"),
 		UserID:             mysql.Quote(alias, "user_id"),
 		InputText:          mysql.Quote(alias, "input_text"),
 		StructuredResult:   mysql.Quote(alias, "structured_result"),
+		OriginalResult:     mysql.Quote(alias, "original_result"),
 		AiModel:            mysql.Quote(alias, "ai_model"),
 		AiPromptTokens:     mysql.Quote(alias, "ai_prompt_tokens"),
 		AiCompletionTokens: mysql.Quote(alias, "ai_completion_tokens"),
@@ -87,6 +91,7 @@ type aiInterpretationColumns struct {
 	UserID             mysql.Expression
 	InputText          mysql.Expression
 	StructuredResult   mysql.Expression
+	OriginalResult     mysql.Expression
 	AiModel            mysql.Expression
 	AiPromptTokens     mysql.Expression
 	AiCompletionTokens mysql.Expression
@@ -105,18 +110,19 @@ func (aiInterpretationColumns) AliasedAs(alias string) aiInterpretationColumns {
 // All values are optional, and do not have to be set
 // Generated columns are not included
 type AiInterpretationSetter struct {
-	ID                 omit.Val[string]                      `db:"id,pk" `
-	UserID             omit.Val[string]                      `db:"user_id" `
-	InputText          omit.Val[string]                      `db:"input_text" `
-	StructuredResult   omit.Val[types.JSON[json.RawMessage]] `db:"structured_result" `
-	AiModel            omit.Val[string]                      `db:"ai_model" `
-	AiPromptTokens     omitnull.Val[int32]                   `db:"ai_prompt_tokens" `
-	AiCompletionTokens omitnull.Val[int32]                   `db:"ai_completion_tokens" `
-	CreatedAt          omit.Val[time.Time]                   `db:"created_at" `
+	ID                 omit.Val[string]                          `db:"id,pk" `
+	UserID             omit.Val[string]                          `db:"user_id" `
+	InputText          omit.Val[string]                          `db:"input_text" `
+	StructuredResult   omit.Val[types.JSON[json.RawMessage]]     `db:"structured_result" `
+	OriginalResult     omitnull.Val[types.JSON[json.RawMessage]] `db:"original_result" `
+	AiModel            omit.Val[string]                          `db:"ai_model" `
+	AiPromptTokens     omitnull.Val[int32]                       `db:"ai_prompt_tokens" `
+	AiCompletionTokens omitnull.Val[int32]                       `db:"ai_completion_tokens" `
+	CreatedAt          omit.Val[time.Time]                       `db:"created_at" `
 }
 
 func (s AiInterpretationSetter) SetColumns() []string {
-	vals := make([]string, 0, 8)
+	vals := make([]string, 0, 9)
 	if s.ID.IsValue() {
 		vals = append(vals, "id")
 	}
@@ -128,6 +134,9 @@ func (s AiInterpretationSetter) SetColumns() []string {
 	}
 	if s.StructuredResult.IsValue() {
 		vals = append(vals, "structured_result")
+	}
+	if !s.OriginalResult.IsUnset() {
+		vals = append(vals, "original_result")
 	}
 	if s.AiModel.IsValue() {
 		vals = append(vals, "ai_model")
@@ -156,6 +165,9 @@ func (s AiInterpretationSetter) Overwrite(t *AiInterpretation) {
 	}
 	if s.StructuredResult.IsValue() {
 		t.StructuredResult = s.StructuredResult.MustGet()
+	}
+	if !s.OriginalResult.IsUnset() {
+		t.OriginalResult = s.OriginalResult.MustGetNull()
 	}
 	if s.AiModel.IsValue() {
 		t.AiModel = s.AiModel.MustGet()
@@ -198,6 +210,11 @@ func (s *AiInterpretationSetter) Apply(q *dialect.InsertQuery) {
 			}
 			return mysql.Arg(s.StructuredResult.MustGet()).WriteSQL(ctx, w, d, start)
 		}), bob.ExpressionFunc(func(ctx context.Context, w io.Writer, d bob.Dialect, start int) ([]any, error) {
+			if !(!s.OriginalResult.IsUnset()) {
+				return mysql.Raw("DEFAULT").WriteSQL(ctx, w, d, start)
+			}
+			return mysql.Arg(s.OriginalResult.MustGetNull()).WriteSQL(ctx, w, d, start)
+		}), bob.ExpressionFunc(func(ctx context.Context, w io.Writer, d bob.Dialect, start int) ([]any, error) {
 			if !(s.AiModel.IsValue()) {
 				return mysql.Raw("DEFAULT").WriteSQL(ctx, w, d, start)
 			}
@@ -225,7 +242,7 @@ func (s AiInterpretationSetter) UpdateMod() bob.Mod[*dialect.UpdateQuery] {
 }
 
 func (s AiInterpretationSetter) Expressions(prefix ...string) []bob.Expression {
-	exprs := make([]bob.Expression, 0, 8)
+	exprs := make([]bob.Expression, 0, 9)
 
 	if s.ID.IsValue() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
@@ -252,6 +269,13 @@ func (s AiInterpretationSetter) Expressions(prefix ...string) []bob.Expression {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			mysql.Quote(append(prefix, "structured_result")...),
 			mysql.Arg(s.StructuredResult),
+		}})
+	}
+
+	if !s.OriginalResult.IsUnset() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			mysql.Quote(append(prefix, "original_result")...),
+			mysql.Arg(s.OriginalResult),
 		}})
 	}
 
@@ -528,6 +552,25 @@ func (os AiInterpretationSlice) User(mods ...bob.Mod[*dialect.SelectQuery]) User
 	)...)
 }
 
+// InterpretationInterpretationItems starts a query for related objects on interpretation_items
+func (o *AiInterpretation) InterpretationInterpretationItems(mods ...bob.Mod[*dialect.SelectQuery]) InterpretationItemsQuery {
+	return InterpretationItems.Query(append(mods,
+		sm.Where(InterpretationItems.Columns.InterpretationID.EQ(mysql.Arg(o.ID))),
+	)...)
+}
+
+func (os AiInterpretationSlice) InterpretationInterpretationItems(mods ...bob.Mod[*dialect.SelectQuery]) InterpretationItemsQuery {
+	PKArgSlice := make([]bob.Expression, len(os))
+	for i, o := range os {
+		PKArgSlice[i] = mysql.ArgGroup(o.ID)
+	}
+	PKArgExpr := mysql.Group(PKArgSlice...)
+
+	return InterpretationItems.Query(append(mods,
+		sm.Where(mysql.Group(InterpretationItems.Columns.InterpretationID).OP("IN", PKArgExpr)),
+	)...)
+}
+
 // Tasks starts a query for related objects on tasks
 func (o *AiInterpretation) Tasks(mods ...bob.Mod[*dialect.SelectQuery]) TasksQuery {
 	return Tasks.Query(append(mods,
@@ -591,6 +634,74 @@ func (aiInterpretation0 *AiInterpretation) AttachUser(ctx context.Context, exec 
 	aiInterpretation0.R.User = user1
 
 	user1.R.AiInterpretations = append(user1.R.AiInterpretations, aiInterpretation0)
+
+	return nil
+}
+
+func insertAiInterpretationInterpretationInterpretationItems0(ctx context.Context, exec bob.Executor, interpretationItems1 []*InterpretationItemSetter, aiInterpretation0 *AiInterpretation) (InterpretationItemSlice, error) {
+	for i := range interpretationItems1 {
+		interpretationItems1[i].InterpretationID = omit.From(aiInterpretation0.ID)
+	}
+
+	ret, err := InterpretationItems.Insert(bob.ToMods(interpretationItems1...)).All(ctx, exec)
+	if err != nil {
+		return ret, fmt.Errorf("insertAiInterpretationInterpretationInterpretationItems0: %w", err)
+	}
+
+	return ret, nil
+}
+
+func attachAiInterpretationInterpretationInterpretationItems0(ctx context.Context, exec bob.Executor, count int, interpretationItems1 InterpretationItemSlice, aiInterpretation0 *AiInterpretation) (InterpretationItemSlice, error) {
+	setter := &InterpretationItemSetter{
+		InterpretationID: omit.From(aiInterpretation0.ID),
+	}
+
+	err := interpretationItems1.UpdateAll(ctx, exec, *setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachAiInterpretationInterpretationInterpretationItems0: %w", err)
+	}
+
+	return interpretationItems1, nil
+}
+
+func (aiInterpretation0 *AiInterpretation) InsertInterpretationInterpretationItems(ctx context.Context, exec bob.Executor, related ...*InterpretationItemSetter) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+
+	interpretationItems1, err := insertAiInterpretationInterpretationInterpretationItems0(ctx, exec, related, aiInterpretation0)
+	if err != nil {
+		return err
+	}
+
+	aiInterpretation0.R.InterpretationInterpretationItems = append(aiInterpretation0.R.InterpretationInterpretationItems, interpretationItems1...)
+
+	for _, rel := range interpretationItems1 {
+		rel.R.InterpretationAiInterpretation = aiInterpretation0
+	}
+	return nil
+}
+
+func (aiInterpretation0 *AiInterpretation) AttachInterpretationInterpretationItems(ctx context.Context, exec bob.Executor, related ...*InterpretationItem) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	interpretationItems1 := InterpretationItemSlice(related)
+
+	_, err = attachAiInterpretationInterpretationInterpretationItems0(ctx, exec, len(related), interpretationItems1, aiInterpretation0)
+	if err != nil {
+		return err
+	}
+
+	aiInterpretation0.R.InterpretationInterpretationItems = append(aiInterpretation0.R.InterpretationInterpretationItems, interpretationItems1...)
+
+	for _, rel := range related {
+		rel.R.InterpretationAiInterpretation = aiInterpretation0
+	}
 
 	return nil
 }
@@ -668,6 +779,7 @@ type aiInterpretationWhere[Q mysql.Filterable] struct {
 	UserID             mysql.WhereMod[Q, string]
 	InputText          mysql.WhereMod[Q, string]
 	StructuredResult   mysql.WhereMod[Q, types.JSON[json.RawMessage]]
+	OriginalResult     mysql.WhereNullMod[Q, types.JSON[json.RawMessage]]
 	AiModel            mysql.WhereMod[Q, string]
 	AiPromptTokens     mysql.WhereNullMod[Q, int32]
 	AiCompletionTokens mysql.WhereNullMod[Q, int32]
@@ -684,6 +796,7 @@ func buildAiInterpretationWhere[Q mysql.Filterable](cols aiInterpretationColumns
 		UserID:             mysql.Where[Q, string](cols.UserID),
 		InputText:          mysql.Where[Q, string](cols.InputText),
 		StructuredResult:   mysql.Where[Q, types.JSON[json.RawMessage]](cols.StructuredResult),
+		OriginalResult:     mysql.WhereNull[Q, types.JSON[json.RawMessage]](cols.OriginalResult),
 		AiModel:            mysql.Where[Q, string](cols.AiModel),
 		AiPromptTokens:     mysql.WhereNull[Q, int32](cols.AiPromptTokens),
 		AiCompletionTokens: mysql.WhereNull[Q, int32](cols.AiCompletionTokens),
@@ -707,6 +820,20 @@ func (o *AiInterpretation) Preload(name string, retrieved any) error {
 
 		if rel != nil {
 			rel.R.AiInterpretations = AiInterpretationSlice{o}
+		}
+		return nil
+	case "InterpretationInterpretationItems":
+		rels, ok := retrieved.(InterpretationItemSlice)
+		if !ok {
+			return fmt.Errorf("aiInterpretation cannot load %T as %q", retrieved, name)
+		}
+
+		o.R.InterpretationInterpretationItems = rels
+
+		for _, rel := range rels {
+			if rel != nil {
+				rel.R.InterpretationAiInterpretation = o
+			}
 		}
 		return nil
 	case "Tasks":
@@ -751,13 +878,17 @@ func buildAiInterpretationPreloader() aiInterpretationPreloader {
 }
 
 type aiInterpretationThenLoader[Q orm.Loadable] struct {
-	User  func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
-	Tasks func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+	User                              func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+	InterpretationInterpretationItems func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+	Tasks                             func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
 }
 
 func buildAiInterpretationThenLoader[Q orm.Loadable]() aiInterpretationThenLoader[Q] {
 	type UserLoadInterface interface {
 		LoadUser(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
+	}
+	type InterpretationInterpretationItemsLoadInterface interface {
+		LoadInterpretationInterpretationItems(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
 	}
 	type TasksLoadInterface interface {
 		LoadTasks(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
@@ -768,6 +899,12 @@ func buildAiInterpretationThenLoader[Q orm.Loadable]() aiInterpretationThenLoade
 			"User",
 			func(ctx context.Context, exec bob.Executor, retrieved UserLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
 				return retrieved.LoadUser(ctx, exec, mods...)
+			},
+		),
+		InterpretationInterpretationItems: thenLoadBuilder[Q](
+			"InterpretationInterpretationItems",
+			func(ctx context.Context, exec bob.Executor, retrieved InterpretationInterpretationItemsLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
+				return retrieved.LoadInterpretationInterpretationItems(ctx, exec, mods...)
 			},
 		),
 		Tasks: thenLoadBuilder[Q](
@@ -825,6 +962,67 @@ func (os AiInterpretationSlice) LoadUser(ctx context.Context, exec bob.Executor,
 
 			o.R.User = rel
 			break
+		}
+	}
+
+	return nil
+}
+
+// LoadInterpretationInterpretationItems loads the aiInterpretation's InterpretationInterpretationItems into the .R struct
+func (o *AiInterpretation) LoadInterpretationInterpretationItems(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if o == nil {
+		return nil
+	}
+
+	// Reset the relationship
+	o.R.InterpretationInterpretationItems = nil
+
+	related, err := o.InterpretationInterpretationItems(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, rel := range related {
+		rel.R.InterpretationAiInterpretation = o
+	}
+
+	o.R.InterpretationInterpretationItems = related
+	return nil
+}
+
+// LoadInterpretationInterpretationItems loads the aiInterpretation's InterpretationInterpretationItems into the .R struct
+func (os AiInterpretationSlice) LoadInterpretationInterpretationItems(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if len(os) == 0 {
+		return nil
+	}
+
+	interpretationItems, err := os.InterpretationInterpretationItems(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		o.R.InterpretationInterpretationItems = nil
+	}
+
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		for _, rel := range interpretationItems {
+
+			if !(o.ID == rel.InterpretationID) {
+				continue
+			}
+
+			rel.R.InterpretationAiInterpretation = o
+
+			o.R.InterpretationInterpretationItems = append(o.R.InterpretationInterpretationItems, rel)
 		}
 	}
 
@@ -896,9 +1094,10 @@ func (os AiInterpretationSlice) LoadTasks(ctx context.Context, exec bob.Executor
 }
 
 type aiInterpretationJoins[Q dialect.Joinable] struct {
-	typ   string
-	User  modAs[Q, userColumns]
-	Tasks modAs[Q, taskColumns]
+	typ                               string
+	User                              modAs[Q, userColumns]
+	InterpretationInterpretationItems modAs[Q, interpretationItemColumns]
+	Tasks                             modAs[Q, taskColumns]
 }
 
 func (j aiInterpretationJoins[Q]) aliasedAs(alias string) aiInterpretationJoins[Q] {
@@ -916,6 +1115,20 @@ func buildAiInterpretationJoins[Q dialect.Joinable](cols aiInterpretationColumns
 				{
 					mods = append(mods, dialect.Join[Q](typ, Users.Name().As(to.Alias())).On(
 						to.ID.EQ(cols.UserID),
+					))
+				}
+
+				return mods
+			},
+		},
+		InterpretationInterpretationItems: modAs[Q, interpretationItemColumns]{
+			c: InterpretationItems.Columns,
+			f: func(to interpretationItemColumns) bob.Mod[Q] {
+				mods := make(mods.QueryMods[Q], 0, 1)
+
+				{
+					mods = append(mods, dialect.Join[Q](typ, InterpretationItems.Name().As(to.Alias())).On(
+						to.InterpretationID.EQ(cols.ID),
 					))
 				}
 

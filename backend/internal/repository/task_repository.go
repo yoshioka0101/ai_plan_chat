@@ -27,8 +27,13 @@ type taskRepository struct {
 
 // NewTaskRepository は新しいTaskRepositoryを生成します
 func NewTaskRepository(db *sql.DB, logger *slog.Logger) interfaces.TaskRepository {
+	return NewTaskRepositoryWithExecutor(bob.NewDB(db), logger)
+}
+
+// NewTaskRepositoryWithExecutor は既存のexecutorを使ってTaskRepositoryを生成します
+func NewTaskRepositoryWithExecutor(exec bob.Executor, logger *slog.Logger) interfaces.TaskRepository {
 	return &taskRepository{
-		db:     bob.NewDB(db),
+		db:     exec,
 		logger: logger,
 	}
 }
@@ -84,6 +89,32 @@ func (r *taskRepository) GetAllTasks(ctx context.Context) (models.TaskSlice, err
 	return tasks, nil
 }
 
+// GetTasksByUserID はユーザーごとのタスク一覧を取得します
+func (r *taskRepository) GetTasksByUserID(ctx context.Context, userID string) (models.TaskSlice, error) {
+	r.logger.InfoContext(ctx, "Repository: GetTasksByUserID started",
+		slog.String("user_id", userID),
+	)
+
+	tasks, err := models.Tasks.Query(
+		sm.Where(models.Tasks.Columns.UserID.EQ(mysql.Arg(userID))),
+		sm.OrderBy(mysql.Raw("created_at DESC")),
+	).All(ctx, r.db)
+
+	if err != nil {
+		r.logger.ErrorContext(ctx, "Repository: Failed to query tasks by user",
+			slog.String("user_id", userID),
+			slog.String("error", err.Error()),
+		)
+		return nil, fmt.Errorf("failed to get tasks: %w", err)
+	}
+
+	r.logger.InfoContext(ctx, "Repository: GetTasksByUserID completed",
+		slog.String("user_id", userID),
+		slog.Int("count", len(tasks)),
+	)
+	return tasks, nil
+}
+
 // CreateTask は新しいタスクを作成します
 func (r *taskRepository) CreateTask(ctx context.Context, task *models.Task) error {
 	r.logger.InfoContext(ctx, "Repository: CreateTask started",
@@ -108,13 +139,16 @@ func (r *taskRepository) CreateTask(ctx context.Context, task *models.Task) erro
 
 	_, err := models.Tasks.Insert(
 		&models.TaskSetter{
-			ID:          omit.From(task.ID),
-			Title:       omit.From(task.Title),
-			Description: omitnull.FromNull(task.Description),
-			DueAt:       omitnull.FromNull(task.DueAt),
-			Status:      omit.From(task.Status),
-			CreatedAt:   omit.From(task.CreatedAt),
-			UpdatedAt:   omit.From(task.UpdatedAt),
+			ID:                 omit.From(task.ID),
+			UserID:             omit.From(task.UserID),
+			Title:              omit.From(task.Title),
+			Description:        omitnull.FromNull(task.Description),
+			DueAt:              omitnull.FromNull(task.DueAt),
+			Status:             omit.From(task.Status),
+			Source:             omit.From(task.Source),
+			AiInterpretationID: omitnull.FromNull(task.AiInterpretationID),
+			CreatedAt:          omit.From(task.CreatedAt),
+			UpdatedAt:          omit.From(task.UpdatedAt),
 		},
 	).Exec(ctx, r.db)
 

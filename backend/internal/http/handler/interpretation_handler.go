@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -18,13 +20,15 @@ import (
 type InterpretationHandler struct {
 	geminiService          *service.GeminiService
 	interpretationRepo     interfaces.InterpretationRepository
+	interpretationItemRepo interfaces.InterpretationItemRepository
 }
 
 // NewInterpretationHandler はInterpretationHandlerを作成します
-func NewInterpretationHandler(geminiService *service.GeminiService, interpretationRepo interfaces.InterpretationRepository) *InterpretationHandler {
+func NewInterpretationHandler(geminiService *service.GeminiService, interpretationRepo interfaces.InterpretationRepository, interpretationItemRepo interfaces.InterpretationItemRepository) *InterpretationHandler {
 	return &InterpretationHandler{
-		geminiService:      geminiService,
-		interpretationRepo: interpretationRepo,
+		geminiService:          geminiService,
+		interpretationRepo:     interpretationRepo,
+		interpretationItemRepo: interpretationItemRepo,
 	}
 }
 
@@ -45,7 +49,7 @@ func (h *InterpretationHandler) CreateInterpretation(c *gin.Context) {
 	}
 
 	// Gemini APIで解析
-	result, err := h.geminiService.InterpretInput(c.Request.Context(), inputText)
+	aiResult, err := h.geminiService.InterpretInput(c.Request.Context(), inputText)
 	if err != nil {
 		apperrors.RespondWithError(c, apperrors.ErrAIInterpretationError, "Failed to interpret input: "+err.Error())
 		return
@@ -70,7 +74,8 @@ func (h *InterpretationHandler) CreateInterpretation(c *gin.Context) {
 		ID:                 interpretationID,
 		UserID:             userID,
 		InputText:          inputText,
-		Result:             *result,
+		Result:             *aiResult.Result,
+		OriginalResult:     aiResult.OriginalJSON,
 		AIModel:            h.geminiService.ModelName(),
 		AIPromptTokens:     ptrInt(len(inputText) / 4), // 概算
 		AICompletionTokens: ptrInt(100),                // 概算
@@ -82,6 +87,24 @@ func (h *InterpretationHandler) CreateInterpretation(c *gin.Context) {
 		return
 	}
 
+	if h.interpretationItemRepo == nil {
+		apperrors.RespondWithError(c, apperrors.ErrConfigurationError, "Item repository is not configured")
+		return
+	}
+
+	items, err := buildInterpretationItems(interpretationID, aiResult.Result, aiResult.OriginalJSON)
+	if err != nil {
+		apperrors.RespondWithError(c, apperrors.ErrInternalServer, "Failed to prepare interpretation items: "+err.Error())
+		return
+	}
+
+	if len(items) > 0 {
+		if err := h.interpretationItemRepo.CreateItems(c.Request.Context(), items); err != nil {
+			apperrors.RespondWithError(c, apperrors.ErrDatabaseError, "Failed to save interpretation items: "+err.Error())
+			return
+		}
+	}
+
 	// レスポンスを作成
 	interpretationIDUUID, _ := uuid.Parse(interpretationID)
 	userIDUUID, _ := uuid.Parse(userID)
@@ -90,12 +113,12 @@ func (h *InterpretationHandler) CreateInterpretation(c *gin.Context) {
 		interpretationIDUUID,
 		userIDUUID,
 		inputText,
-		result,
+		aiResult.Result,
 		h.geminiService.ModelName(),
 		entityInterpretation.CreatedAt,
 	)
 
-	interpretationType := convertToResponseType(result.Type)
+	interpretationType := convertToResponseType(aiResult.Result.Type)
 	response := api.InterpretationResponse{
 		Type:           interpretationType,
 		Interpretation: interpretation,
@@ -181,6 +204,55 @@ func (h *InterpretationHandler) GetInterpretation(c *gin.Context) {
 	c.JSON(http.StatusOK, apiInterp)
 }
 
+// buildInterpretationItems はAI解釈結果からレビュー用アイテムを組み立てます
+func buildInterpretationItems(interpretationID string, result *entity.InterpretationResult, originalJSON []byte) ([]*entity.InterpretationItem, error) {
+	if result == nil {
+		return nil, fmt.Errorf("interpretation result is nil")
+	}
+
+	taskData := entity.TaskData{
+		Title: result.Title,
+	}
+
+	if desc := ptrStringIfNotEmpty(result.Description); desc != nil {
+		taskData.Description = desc
+	}
+
+	if result.Metadata.Deadline != nil {
+		taskData.DueAt = result.Metadata.Deadline
+	}
+
+	if result.Metadata.Priority != nil {
+		taskData.Priority = result.Metadata.Priority
+	}
+
+	if len(result.Metadata.Tags) > 0 {
+		taskData.Tags = result.Metadata.Tags
+	}
+
+	dataBytes, err := json.Marshal(taskData)
+	if err != nil {
+		return nil, err
+	}
+
+	itemOriginal := originalJSON
+	if len(itemOriginal) == 0 {
+		itemOriginal = dataBytes
+	}
+
+	return []*entity.InterpretationItem{
+		{
+			ID:               uuid.New().String(),
+			InterpretationID: interpretationID,
+			ItemIndex:        0,
+			ResourceType:     entity.ResourceTypeTask,
+			Status:           entity.ItemStatusPending,
+			Data:             dataBytes,
+			OriginalData:     itemOriginal,
+		},
+	}, nil
+}
+
 // buildAIInterpretation はAIInterpretation構造体を構築します
 func buildAIInterpretation(
 	id uuid.UUID,
@@ -193,11 +265,11 @@ func buildAIInterpretation(
 	structuredResult := struct {
 		Description *string `json:"description,omitempty"`
 		Metadata    *struct {
-			Deadline *time.Time                                              `json:"deadline,omitempty"`
+			Deadline *time.Time                                            `json:"deadline,omitempty"`
 			Priority *api.AIInterpretationStructuredResultMetadataPriority `json:"priority,omitempty"`
-			Tags     *[]string                                               `json:"tags,omitempty"`
+			Tags     *[]string                                             `json:"tags,omitempty"`
 		} `json:"metadata,omitempty"`
-		Title *string                                     `json:"title,omitempty"`
+		Title *string                                   `json:"title,omitempty"`
 		Type  *api.AIInterpretationStructuredResultType `json:"type,omitempty"`
 	}{
 		Title:       ptrString(result.Title),
@@ -206,9 +278,9 @@ func buildAIInterpretation(
 
 	// Metadataの処理（Todoのみ）
 	metadata := &struct {
-		Deadline *time.Time                                              `json:"deadline,omitempty"`
+		Deadline *time.Time                                            `json:"deadline,omitempty"`
 		Priority *api.AIInterpretationStructuredResultMetadataPriority `json:"priority,omitempty"`
-		Tags     *[]string                                               `json:"tags,omitempty"`
+		Tags     *[]string                                             `json:"tags,omitempty"`
 	}{
 		Deadline: result.Metadata.Deadline,
 	}

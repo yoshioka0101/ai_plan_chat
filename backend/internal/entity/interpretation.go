@@ -34,6 +34,7 @@ type AIInterpretation struct {
 	UserID             string
 	InputText          string
 	Result             InterpretationResult
+	OriginalResult     []byte // Geminiの生レスポンス（JSON）
 	AIModel            string
 	AIPromptTokens     *int
 	AICompletionTokens *int

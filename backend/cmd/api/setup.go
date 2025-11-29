@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
+	"github.com/stephenafamo/bob"
 	"github.com/yoshioka0101/ai_plan_chat/config"
 	"github.com/yoshioka0101/ai_plan_chat/internal/http"
 	"github.com/yoshioka0101/ai_plan_chat/internal/http/handler"
@@ -65,7 +66,14 @@ func initializeGeminiService(config *config.Config) *service.GeminiService {
 // initializeInterpretationHandler はInterpretationHandlerを初期化します
 func initializeInterpretationHandler(db *sql.DB, logger *slog.Logger, geminiService *service.GeminiService) *handler.InterpretationHandler {
 	interpretationRepo := repository.NewInterpretationRepository(db, logger)
-	return handler.NewInterpretationHandler(geminiService, interpretationRepo)
+	interpretationItemRepo := repository.NewInterpretationItemRepository(bob.NewDB(db), logger)
+	return handler.NewInterpretationHandler(geminiService, interpretationRepo, interpretationItemRepo)
+}
+
+// initializeInterpretationItemHandler はInterpretationItemHandlerを初期化します
+func initializeInterpretationItemHandler(db *sql.DB, logger *slog.Logger) *handler.InterpretationItemHandler {
+	itemUseCase := usecase.NewInterpretationItemUseCase(db, logger)
+	return handler.NewInterpretationItemHandler(itemUseCase)
 }
 
 // InitializeServer は全ての依存性注入を行い、Ginルーターを返します
@@ -82,12 +90,13 @@ func InitializeServer(db *sql.DB, config *config.Config) *gin.Engine {
 	taskHandler := initializeTaskHandler(db, logger)
 	authHandler, authService := initializeAuthHandler(db, config)
 	interpretationHandler := initializeInterpretationHandler(db, logger, geminiService)
+	interpretationItemHandler := initializeInterpretationItemHandler(db, logger)
 
 	// 認証ミドルウェアを初期化
 	authMiddleware := middleware.NewAuthMiddleware(authService)
 
 	// 統合ハンドラーを作成
-	server := http.NewServer(healthHandler, taskHandler, authHandler, interpretationHandler)
+	server := http.NewServer(healthHandler, taskHandler, authHandler, interpretationHandler, interpretationItemHandler)
 
 	// ルーターをセットアップ（OpenAPI仕様に基づく）
 	return http.SetupRoutes(server, authMiddleware)

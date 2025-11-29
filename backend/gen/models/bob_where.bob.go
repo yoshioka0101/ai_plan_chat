@@ -17,20 +17,23 @@ var (
 )
 
 func Where[Q mysql.Filterable]() struct {
-	AiInterpretations aiInterpretationWhere[Q]
-	Tasks             taskWhere[Q]
-	UserAuths         userAuthWhere[Q]
-	Users             userWhere[Q]
+	AiInterpretations   aiInterpretationWhere[Q]
+	InterpretationItems interpretationItemWhere[Q]
+	Tasks               taskWhere[Q]
+	UserAuths           userAuthWhere[Q]
+	Users               userWhere[Q]
 } {
 	return struct {
-		AiInterpretations aiInterpretationWhere[Q]
-		Tasks             taskWhere[Q]
-		UserAuths         userAuthWhere[Q]
-		Users             userWhere[Q]
+		AiInterpretations   aiInterpretationWhere[Q]
+		InterpretationItems interpretationItemWhere[Q]
+		Tasks               taskWhere[Q]
+		UserAuths           userAuthWhere[Q]
+		Users               userWhere[Q]
 	}{
-		AiInterpretations: buildAiInterpretationWhere[Q](AiInterpretations.Columns),
-		Tasks:             buildTaskWhere[Q](Tasks.Columns),
-		UserAuths:         buildUserAuthWhere[Q](UserAuths.Columns),
-		Users:             buildUserWhere[Q](Users.Columns),
+		AiInterpretations:   buildAiInterpretationWhere[Q](AiInterpretations.Columns),
+		InterpretationItems: buildInterpretationItemWhere[Q](InterpretationItems.Columns),
+		Tasks:               buildTaskWhere[Q](Tasks.Columns),
+		UserAuths:           buildUserAuthWhere[Q](UserAuths.Columns),
+		Users:               buildUserWhere[Q](Users.Columns),
 	}
 }
