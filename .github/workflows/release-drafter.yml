@@ -4,8 +4,7 @@ on:
   push:
     branches:
       - main
-      - v*.*.*  # リリースブランチ（v1.0.0 など）
-  pull_request:
+  pull_request_target:
     types: [opened, reopened, synchronize]
 
 permissions:
