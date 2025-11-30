@@ -78,8 +78,22 @@ make redoc
 
 ブラウザで http://localhost:3001 にアクセスしてAPI仕様を確認できます。
 
+## Dockerでの実行（ECS/ECR向け）
+Dockerが使える環境で、バックエンドのみコンテナ起動する場合。
+
+```bash
+cd backend
+# ARM向けイメージをビルド（ポートは8080）
+docker buildx build --platform linux/arm64 -t hubplanner-backend:local -f Dockerfile .
+
+# ローカル実行
+docker run --rm -p 8080:8080 hubplanner-backend:local
+# → http://localhost:8080/health が返ればOK
+```
+
+ECRにpushする場合は、リポジトリURIでタグ付けしてから `docker push` してください。
+
 ## 利用可能なコマンド
 
 必要なコマンドは  make コマンドで全て確認することができます
-
 
