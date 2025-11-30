@@ -36,6 +36,7 @@ install:
 	go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
 	go install github.com/air-verse/air@latest
 	go install github.com/stephenafamo/bob/gen/bobgen-mysql@latest
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 	@echo "Node.js ツール:"
 	npm install -g http-server
 	npm install -g @redocly/cli
@@ -86,6 +87,14 @@ gen-api: redocly-bundle ## コード生成（oapi-codegen）
 	@cd internal/api/openapi && go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen --config=./oapi-codegen.yaml ./openapi-bundle.yaml
 	@go mod tidy
 
+.PHONY: gen-db
+gen-db: ## データベースからGo型を生成（bobgen）
+	@echo "データベースからGo型を生成しています"
+	@echo "DB_DSN環境変数が設定されていない場合は、デフォルト値を使用します"
+	@bobgen mysql -c bobgen.yaml
+	@go mod tidy
+	@echo "✅ データベース型生成完了: internal/gen/db"
+
 # OpenAPIからコードを生成（従来版）
 openapi-gen:
 	@echo "OpenAPIからコードを生成しています"
@@ -100,6 +109,7 @@ redoc: ## redoc を起動する
 dev-full:
 	@echo "統合開発環境を起動中..."
 	@$(MAKE) --no-print-directory gen-api
+	@$(MAKE) --no-print-directory gen-db
 	@echo "APIサーバー: http://localhost:8080"
 	@echo "ReDoc: 別ターミナルで 'make redoc' を実行"
 	@$(MAKE) --no-print-directory dev
