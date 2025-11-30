@@ -1,0 +1,77 @@
+type: object
+properties:
+  id:
+    type: string
+    format: uuid
+    description: AI解釈ID
+  user_id:
+    type: string
+    format: uuid
+    description: ユーザーID
+  input_text:
+    type: string
+    description: 入力テキスト
+  structured_result:
+    type: object
+    description: AI解析結果（JSON）
+    properties:
+      type:
+        type: string
+        enum: [todo]
+        description: アイテムタイプ（現在はtodoのみサポート）
+      title:
+        type: string
+        description: タイトル
+      description:
+        type: string
+        description: 説明
+      metadata:
+        type: object
+        description: Todoのメタデータ
+        properties:
+          deadline:
+            type: string
+            format: date-time
+            description: 期限
+          priority:
+            type: string
+            enum: [low, medium, high]
+            description: 優先度
+          tags:
+            type: array
+            items:
+              type: string
+            description: タグ
+    examples:
+      - type: todo
+        title: 大根を買う
+        description: スーパーで購入
+        metadata:
+          deadline: "2025-01-15T00:00:00Z"
+          priority: high
+          tags: ["買い物", "食材"]
+      - type: todo
+        title: 歯医者の予約確認
+        metadata:
+          deadline: "2025-01-18T10:00:00Z"
+          priority: medium
+  ai_model:
+    type: string
+    description: 使用AIモデル
+  ai_prompt_tokens:
+    type: integer
+    description: 入力トークン数
+  ai_completion_tokens:
+    type: integer
+    description: 出力トークン数
+  created_at:
+    type: string
+    format: date-time
+    description: 作成日時
+required:
+  - id
+  - user_id
+  - input_text
+  - structured_result
+  - ai_model
+  - created_at

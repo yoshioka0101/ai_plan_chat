@@ -1,0 +1,57 @@
+type: object
+properties:
+  id:
+    type: string
+    format: uuid
+    description: アイテムID
+  interpretation_id:
+    type: string
+    format: uuid
+    description: AI解釈ID
+  item_index:
+    type: integer
+    description: 結果内のindex
+  resource_type:
+    type: string
+    enum: [task, event, wallet]
+    description: リソースタイプ
+  resource_id:
+    type: string
+    format: uuid
+    nullable: true
+    description: 作成済みリソースID（承認後に設定）
+  status:
+    type: string
+    enum: [pending, created]
+    description: ステータス
+  data:
+    type: object
+    description: 編集後のアイテム内容（JSON）
+    additionalProperties: true
+  original_data:
+    type: object
+    description: AI提案の原本（JSON）
+    additionalProperties: true
+  reviewed_at:
+    type: string
+    format: date-time
+    nullable: true
+    description: レビュー日時
+  created_at:
+    type: string
+    format: date-time
+    description: 作成日時
+  updated_at:
+    type: string
+    format: date-time
+    description: 更新日時
+required:
+  - id
+  - interpretation_id
+  - item_index
+  - resource_type
+  - status
+  - data
+  - original_data
+  - created_at
+  - updated_at

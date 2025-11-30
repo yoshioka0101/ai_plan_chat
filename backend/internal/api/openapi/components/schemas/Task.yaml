@@ -1,0 +1,60 @@
+
+type: object
+properties:
+  id:
+    type: string
+    format: uuid
+    description: タスクID
+    pattern: '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+  user_id:
+    type: string
+    format: uuid
+    description: ユーザーID
+  title:
+    type: string
+    description: タスクのタイトル
+    minLength: 1
+    maxLength: 255
+  source:
+    type: string
+    enum: ['manual', 'ai']
+    description: 作成元
+  description:
+    type: string
+    nullable: true
+    description: タスクの説明
+  due_at:
+    type: string
+    format: date-time
+    nullable: true
+    description: タスクの期限
+  status:
+    type: string
+    description: タスクの状態
+    enum: ['todo', 'in_progress', 'done']
+  priority:
+    type: string
+    description: タスクの優先度
+    enum: ['low', 'medium', 'high']
+    nullable: true
+  interpretation_id:
+    type: string
+    format: uuid
+    nullable: true
+    description: このタスクを作成したAI解釈のID
+  created_at:
+    type: string
+    format: date-time
+    description: 作成日時
+  updated_at:
+    type: string
+    format: date-time
+    description: 更新日時
+required:
+  - id
+  - user_id
+  - title
+  - source
+  - status
+  - created_at
+  - updated_at

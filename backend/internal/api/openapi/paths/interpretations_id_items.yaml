@@ -1,0 +1,31 @@
+get:
+  summary: GetInterpretationItems
+  description: AI解釈に紐づくアイテム一覧を取得
+  operationId: getInterpretationItems
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: AI解釈ID
+      schema:
+        type: string
+        format: uuid
+  responses:
+    '200':
+      description: Success
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/InterpretationItemsResponse.yaml'
+    '400':
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ErrorResponse.yaml'
+    '404':
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ErrorResponse.yaml'

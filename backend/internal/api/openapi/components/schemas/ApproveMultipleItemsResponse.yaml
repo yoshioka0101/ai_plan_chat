@@ -1,0 +1,10 @@
+type: object
+properties:
+  resource_ids:
+    type: object
+    additionalProperties:
+      type: string
+      format: uuid
+    description: アイテムIDをキー、作成されたリソースIDを値とするマップ
+required:
+  - resource_ids

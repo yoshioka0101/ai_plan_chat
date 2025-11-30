@@ -8,18 +8,63 @@ servers:
     description: Development server
 paths:
   /health:
-    get:
-      summary: Health check endpoint
-      description: Health check のためのエンドポイント
-      operationId: GetHealth
-      responses:
-        '200':
-          description: Successful health check
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HealthResponse'
+    $ref: './paths/health.yaml'
+  /tasks:
+    $ref: './paths/tasks.yaml'
+  /tasks/{id}:
+    $ref: './paths/tasks_id.yaml'
+  /auth/google/callback:
+    $ref: './paths/auth_google_callback.yaml'
+  /interpretations:
+    $ref: './paths/interpretations.yaml'
+  /interpretations/{id}:
+    $ref: './paths/interpretations_id.yaml'
+  /interpretations/{id}/items:
+    $ref: './paths/interpretations_id_items.yaml'
+  /interpretations/{id}/approve-items:
+    $ref: './paths/interpretations_id_approve_items.yaml'
+  /interpretation-items/{id}:
+    $ref: './paths/interpretation_items_id.yaml'
+  /interpretation-items/{id}/approve:
+    $ref: './paths/interpretation_items_id_approve.yaml'
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     HealthResponse:
       $ref: './components/schemas/HealthResponse.yaml'
+    Task:
+      $ref: './components/schemas/Task.yaml'
+    CreateTaskRequest:
+      $ref: './components/schemas/CreateTaskRequest.yaml'
+    UpdateTaskRequest:
+      $ref: './components/schemas/UpdateTaskRequest.yaml'
+    EditTaskRequest:
+      $ref: './components/schemas/EditTaskRequest.yaml'
+    ErrorResponse:
+      $ref: './components/schemas/ErrorResponse.yaml'
+    User:
+      $ref: './components/schemas/User.yaml'
+    AuthResponse:
+      $ref: './components/schemas/AuthResponse.yaml'
+    CreateInterpretationRequest:
+      $ref: './components/schemas/CreateInterpretationRequest.yaml'
+    InterpretationResponse:
+      $ref: './components/schemas/InterpretationResponse.yaml'
+    AIInterpretation:
+      $ref: './components/schemas/AIInterpretation.yaml'
+    InterpretationItem:
+      $ref: './components/schemas/InterpretationItem.yaml'
+    InterpretationItemsResponse:
+      $ref: './components/schemas/InterpretationItemsResponse.yaml'
+    UpdateItemRequest:
+      $ref: './components/schemas/UpdateItemRequest.yaml'
+    ApproveItemResponse:
+      $ref: './components/schemas/ApproveItemResponse.yaml'
+    ApproveMultipleItemsRequest:
+      $ref: './components/schemas/ApproveMultipleItemsRequest.yaml'
+    ApproveMultipleItemsResponse:
+      $ref: './components/schemas/ApproveMultipleItemsResponse.yaml'

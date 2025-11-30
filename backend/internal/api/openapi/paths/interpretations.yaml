@@ -1,0 +1,105 @@
+post:
+  summary: CreateInterpretation
+  description: 自然言語入力によるAI解析
+  operationId: createInterpretation
+  security:
+    - BearerAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas/CreateInterpretationRequest.yaml'
+  responses:
+    '200':
+      description: Success
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/InterpretationResponse.yaml'
+    '400':
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ErrorResponse.yaml'
+    '401':
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ErrorResponse.yaml'
+    '422':
+      description: Unprocessable Entity (AI解析エラー)
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ErrorResponse.yaml'
+    '500':
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ErrorResponse.yaml'
+
+get:
+  summary: ListInterpretations
+  description: AI解析履歴の取得
+  operationId: listInterpretations
+  security:
+    - BearerAuth: []
+  parameters:
+    - name: type
+      in: query
+      description: AI解析のtype絞り込み
+      schema:
+        type: string
+        enum: [todo, event, reminder, note, expense, unknown]
+    - name: limit
+      in: query
+      description: "取得件数（デフォルト: 20）"
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    - name: offset
+      in: query
+      description: オフセット（ページネーション）
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+  responses:
+    '200':
+      description: Success
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - interpretations
+              - total
+            properties:
+              interpretations:
+                type: array
+                items:
+                  $ref: '../components/schemas/AIInterpretation.yaml'
+              total:
+                type: integer
+              limit:
+                type: integer
+              offset:
+                type: integer
+    '401':
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ErrorResponse.yaml'
+    '500':
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ErrorResponse.yaml'

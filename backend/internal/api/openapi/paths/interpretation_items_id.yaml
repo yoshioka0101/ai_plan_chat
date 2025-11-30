@@ -1,0 +1,68 @@
+get:
+  summary: GetInterpretationItem
+  description: アイテムの詳細取得
+  operationId: getInterpretationItem
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: アイテムID
+      schema:
+        type: string
+        format: uuid
+  responses:
+    '200':
+      description: Success
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/InterpretationItem.yaml'
+    '400':
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ErrorResponse.yaml'
+    '404':
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ErrorResponse.yaml'
+patch:
+  summary: UpdateInterpretationItem
+  description: アイテムのdata内容を編集（pending状態のみ）
+  operationId: updateInterpretationItem
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: アイテムID
+      schema:
+        type: string
+        format: uuid
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas/UpdateItemRequest.yaml'
+  responses:
+    '200':
+      description: Success
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/InterpretationItem.yaml'
+    '400':
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ErrorResponse.yaml'
+    '404':
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ErrorResponse.yaml'

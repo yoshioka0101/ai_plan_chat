@@ -1,0 +1,9 @@
+type: object
+properties:
+  items:
+    type: array
+    items:
+      $ref: './InterpretationItem.yaml'
+    description: アイテム一覧
+required:
+  - items

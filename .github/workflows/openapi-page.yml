@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+      - v1.*
+      - fix*
   workflow_dispatch:
 
 permissions:
@@ -13,31 +15,37 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-    
+      url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-      
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Redocly CLI
+        run: npm install -g @redocly/cli
+
       - name: Generate API Documentation
         run: |
           mkdir -p docs
-          npx @redocly/cli build-docs backend/openapi.yaml --output docs/index.html
-      
+          redocly build-docs backend/internal/api/openapi/openapi-bundle.yaml --output docs/index.html
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./docs
-      
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

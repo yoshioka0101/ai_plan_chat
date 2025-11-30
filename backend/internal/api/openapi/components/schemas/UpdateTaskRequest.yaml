@@ -1,0 +1,29 @@
+
+type: object
+properties:
+  title:
+    type: string
+    description: タスクのタイトル
+    minLength: 1
+    maxLength: 255
+  description:
+    type: string
+    nullable: true
+    description: タスクの説明
+  due_at:
+    type: string
+    format: date-time
+    nullable: true
+    description: タスクの期限
+  status:
+    type: string
+    description: タスクの状態
+    enum: ['todo', 'in_progress', 'done']
+  priority:
+    type: string
+    description: タスクの優先度
+    enum: ['low', 'medium', 'high']
+    nullable: true
+required:
+  - title
+  - status

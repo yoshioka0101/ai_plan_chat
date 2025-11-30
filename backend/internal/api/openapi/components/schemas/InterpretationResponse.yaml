@@ -1,0 +1,16 @@
+type: object
+properties:
+  type:
+    type: string
+    enum: [todo, event, reminder, note, expense, unknown]
+    description: 解析結果のタイプ
+  interpretation:
+    $ref: './AIInterpretation.yaml'
+    description: AI解釈結果
+  message:
+    type: string
+    nullable: true
+    description: type=unknownの場合のメッセージ
+required:
+  - type
+  - interpretation

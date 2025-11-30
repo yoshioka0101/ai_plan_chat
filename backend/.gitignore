@@ -1,4 +1,5 @@
-# Binaries for programs and plugins
+# Go binaries
+bin/
 *.exe
 *.exe~
 *.dll
@@ -11,23 +12,33 @@
 # Output of the go coverage tool
 *.out
 
-# Dependency directories
-vendor/
-
 # Go workspace file
 go.work
 
-# Build output
-bin/
+# Air (live reload tool)
 tmp/
+.air.toml
 
-# IDE files
+# Generated files
+internal/gen/
+
+# Environment variables
+.env
+.env.bak
+.env.*
+.env.local
+.env.development
+.env.test
+.env.production
+
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# OS generated files
+# OS
 .DS_Store
 .DS_Store?
 ._*
@@ -35,3 +46,23 @@ tmp/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory
+coverage/
+
+# Dependency directories
+vendor/
+
+# Build artifacts
+dist/
+build/

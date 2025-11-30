@@ -9,7 +9,7 @@ servers:
 paths:
   /health:
     get:
-      summary: Health check endpoint
+      summary: GetHealth
       description: Health check のためのエンドポイント
       operationId: GetHealth
       responses:
@@ -19,7 +19,542 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
+  /tasks:
+    get:
+      summary: GetTaskList
+      description: タスクの一覧取得
+      operationId: getTaskList
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: CreateTask
+      description: タスクの新規作成
+      operationId: createTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskRequest'
+      responses:
+        '201':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tasks/{id}:
+    get:
+      summary: GetTask
+      description: タスクの単一取得
+      operationId: getTask
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: UpdateTask
+      description: タスクの更新
+      operationId: updateTask
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      summary: EditTask
+      description: タスクの編集
+      operationId: editTask
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditTaskRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: DeleteTask
+      description: タスクの削除
+      operationId: deleteTask
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: No Content
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/google/callback:
+    post:
+      summary: GoogleCallback
+      description: Google OAuth 2.0コールバック処理
+      operationId: googleCallback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+              properties:
+                code:
+                  type: string
+                  description: Google OAuthから返されたauthorization code
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /interpretations:
+    post:
+      summary: CreateInterpretation
+      description: 自然言語入力によるAI解析
+      operationId: createInterpretation
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInterpretationRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterpretationResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Unprocessable Entity (AI解析エラー)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      summary: ListInterpretations
+      description: AI解析履歴の取得
+      operationId: listInterpretations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          description: AI解析のtype絞り込み
+          schema:
+            type: string
+            enum:
+              - todo
+              - event
+              - reminder
+              - note
+              - expense
+              - unknown
+        - name: limit
+          in: query
+          description: '取得件数（デフォルト: 20）'
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          description: オフセット（ページネーション）
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - interpretations
+                  - total
+                properties:
+                  interpretations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AIInterpretation'
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /interpretations/{id}:
+    get:
+      summary: GetInterpretation
+      description: 特定のAI解析結果の詳細取得
+      operationId: getInterpretation
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: AI解釈ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIInterpretation'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /interpretations/{id}/items:
+    get:
+      summary: GetInterpretationItems
+      description: AI解釈に紐づくアイテム一覧を取得
+      operationId: getInterpretationItems
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: AI解釈ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterpretationItemsResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /interpretations/{id}/approve-items:
+    post:
+      summary: ApproveMultipleInterpretationItems
+      description: 複数のアイテムを一括承認してリソースを作成（トランザクション）
+      operationId: approveMultipleInterpretationItems
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: AI解釈ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApproveMultipleItemsRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApproveMultipleItemsResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /interpretation-items/{id}:
+    get:
+      summary: GetInterpretationItem
+      description: アイテムの詳細取得
+      operationId: getInterpretationItem
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: アイテムID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterpretationItem'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      summary: UpdateInterpretationItem
+      description: アイテムのdata内容を編集（pending状態のみ）
+      operationId: updateInterpretationItem
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: アイテムID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateItemRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterpretationItem'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /interpretation-items/{id}/approve:
+    post:
+      summary: ApproveInterpretationItem
+      description: アイテムを承認してリソース（タスク等）を作成
+      operationId: approveInterpretationItem
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: アイテムID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApproveItemResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     HealthResponse:
       type: object
@@ -29,3 +564,443 @@ components:
           example: ok
       required:
         - status
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: タスクID
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        user_id:
+          type: string
+          format: uuid
+          description: ユーザーID
+        title:
+          type: string
+          description: タスクのタイトル
+          minLength: 1
+          maxLength: 255
+        source:
+          type: string
+          enum:
+            - manual
+            - ai
+          description: 作成元
+        description:
+          type: string
+          nullable: true
+          description: タスクの説明
+        due_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: タスクの期限
+        status:
+          type: string
+          description: タスクの状態
+          enum:
+            - todo
+            - in_progress
+            - done
+        priority:
+          type: string
+          description: タスクの優先度
+          enum:
+            - low
+            - medium
+            - high
+          nullable: true
+        interpretation_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: このタスクを作成したAI解釈のID
+        created_at:
+          type: string
+          format: date-time
+          description: 作成日時
+        updated_at:
+          type: string
+          format: date-time
+          description: 更新日時
+      required:
+        - id
+        - user_id
+        - title
+        - source
+        - status
+        - created_at
+        - updated_at
+    CreateTaskRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          description: タスクのタイトル
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+          description: タスクの説明
+        due_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: タスクの期限
+        status:
+          type: string
+          description: タスクの状態
+          enum:
+            - todo
+            - in_progress
+            - done
+          default: todo
+        priority:
+          type: string
+          description: タスクの優先度
+          enum:
+            - low
+            - medium
+            - high
+          nullable: true
+        interpretation_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: このタスクを作成したAI解釈のID
+      required:
+        - title
+    UpdateTaskRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          description: タスクのタイトル
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+          description: タスクの説明
+        due_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: タスクの期限
+        status:
+          type: string
+          description: タスクの状態
+          enum:
+            - todo
+            - in_progress
+            - done
+        priority:
+          type: string
+          description: タスクの優先度
+          enum:
+            - low
+            - medium
+            - high
+          nullable: true
+      required:
+        - title
+        - status
+    EditTaskRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          description: タスクのタイトル
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+          description: タスクの説明
+        due_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: タスクの期限
+        status:
+          type: string
+          description: タスクの状態
+          enum:
+            - todo
+            - in_progress
+            - done
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          description: エラーコード
+        message:
+          type: string
+          description: エラーメッセージ
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ユーザーID
+        nickname:
+          type: string
+          description: ニックネーム/表示名
+        avatar:
+          type: string
+          nullable: true
+          description: アバター画像URL
+        created_at:
+          type: string
+          format: date-time
+          description: 作成日時
+      required:
+        - id
+        - nickname
+        - created_at
+    AuthResponse:
+      type: object
+      properties:
+        jwt_token:
+          type: string
+          description: JWTトークン（有効期限24時間）
+        user:
+          $ref: '#/components/schemas/User'
+      required:
+        - jwt_token
+        - user
+    CreateInterpretationRequest:
+      type: object
+      properties:
+        input_text:
+          type: string
+          minLength: 1
+          maxLength: 10000
+          description: 自然言語テキスト
+      required:
+        - input_text
+    InterpretationResponse:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - todo
+            - event
+            - reminder
+            - note
+            - expense
+            - unknown
+          description: 解析結果のタイプ
+        interpretation:
+          $ref: '#/components/schemas/AIInterpretation'
+          description: AI解釈結果
+        message:
+          type: string
+          nullable: true
+          description: type=unknownの場合のメッセージ
+      required:
+        - type
+        - interpretation
+    AIInterpretation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: AI解釈ID
+        user_id:
+          type: string
+          format: uuid
+          description: ユーザーID
+        input_text:
+          type: string
+          description: 入力テキスト
+        structured_result:
+          type: object
+          description: AI解析結果（JSON）
+          properties:
+            type:
+              type: string
+              enum:
+                - todo
+              description: アイテムタイプ（現在はtodoのみサポート）
+            title:
+              type: string
+              description: タイトル
+            description:
+              type: string
+              description: 説明
+            metadata:
+              type: object
+              description: Todoのメタデータ
+              properties:
+                deadline:
+                  type: string
+                  format: date-time
+                  description: 期限
+                priority:
+                  type: string
+                  enum:
+                    - low
+                    - medium
+                    - high
+                  description: 優先度
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  description: タグ
+          examples:
+            - type: todo
+              title: 大根を買う
+              description: スーパーで購入
+              metadata:
+                deadline: '2025-01-15T00:00:00Z'
+                priority: high
+                tags:
+                  - 買い物
+                  - 食材
+            - type: todo
+              title: 歯医者の予約確認
+              metadata:
+                deadline: '2025-01-18T10:00:00Z'
+                priority: medium
+        ai_model:
+          type: string
+          description: 使用AIモデル
+        ai_prompt_tokens:
+          type: integer
+          description: 入力トークン数
+        ai_completion_tokens:
+          type: integer
+          description: 出力トークン数
+        created_at:
+          type: string
+          format: date-time
+          description: 作成日時
+      required:
+        - id
+        - user_id
+        - input_text
+        - structured_result
+        - ai_model
+        - created_at
+    InterpretationItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: アイテムID
+        interpretation_id:
+          type: string
+          format: uuid
+          description: AI解釈ID
+        item_index:
+          type: integer
+          description: 結果内のindex
+        resource_type:
+          type: string
+          enum:
+            - task
+            - event
+            - wallet
+          description: リソースタイプ
+        resource_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: 作成済みリソースID（承認後に設定）
+        status:
+          type: string
+          enum:
+            - pending
+            - created
+          description: ステータス
+        data:
+          type: object
+          description: 編集後のアイテム内容（JSON）
+          additionalProperties: true
+        original_data:
+          type: object
+          description: AI提案の原本（JSON）
+          additionalProperties: true
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: レビュー日時
+        created_at:
+          type: string
+          format: date-time
+          description: 作成日時
+        updated_at:
+          type: string
+          format: date-time
+          description: 更新日時
+      required:
+        - id
+        - interpretation_id
+        - item_index
+        - resource_type
+        - status
+        - data
+        - original_data
+        - created_at
+        - updated_at
+    InterpretationItemsResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InterpretationItem'
+          description: アイテム一覧
+      required:
+        - items
+    UpdateItemRequest:
+      type: object
+      properties:
+        data:
+          type: object
+          description: 更新後のアイテム内容（JSON）
+          additionalProperties: true
+      required:
+        - data
+    ApproveItemResponse:
+      type: object
+      properties:
+        resource_id:
+          type: string
+          format: uuid
+          description: 作成されたリソースID
+      required:
+        - resource_id
+    ApproveMultipleItemsRequest:
+      type: object
+      properties:
+        item_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: 承認するアイテムIDの配列
+          minItems: 1
+      required:
+        - item_ids
+    ApproveMultipleItemsResponse:
+      type: object
+      properties:
+        resource_ids:
+          type: object
+          additionalProperties:
+            type: string
+            format: uuid
+          description: アイテムIDをキー、作成されたリソースIDを値とするマップ
+      required:
+        - resource_ids

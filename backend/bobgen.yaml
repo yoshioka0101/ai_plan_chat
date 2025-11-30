@@ -1,0 +1,25 @@
+# MySQL設定
+mysql:
+  dsn: "root:password@tcp(localhost:3306)/ai_chat_task?parseTime=true"
+
+  # 出力先とパッケージ名
+  output: ./gen/models
+  pkgname: models
+
+  # Factory configuration
+  factory:
+    output: ./factory
+    models: github.com/yoshioka0101/ai_plan_chat/gen/models
+
+  only:
+    users:
+    user_auths:
+    ai_interpretations:
+    interpretation_items:
+    tasks:
+
+  # リレーションシップの生成を有効化
+  relationships: true
+
+  null-type-strategy: sql
+

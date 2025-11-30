@@ -1,0 +1,8 @@
+type: object
+properties:
+  data:
+    type: object
+    description: 更新後のアイテム内容（JSON）
+    additionalProperties: true
+required:
+  - data
