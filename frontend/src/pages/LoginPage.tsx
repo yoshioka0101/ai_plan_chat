@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import './LoginPage.css';
-import { BACKEND_URL } from './config';
+import { BACKEND_URL } from '../config';
 
 export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
