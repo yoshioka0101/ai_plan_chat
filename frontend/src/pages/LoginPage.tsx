@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import './LoginPage.css';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
-const BACKEND_URL = API_BASE_URL.replace('/api/v1', '');
+import { BACKEND_URL } from './config';
 
 export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
