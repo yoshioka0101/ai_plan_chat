@@ -42,6 +42,11 @@ func SetupRoutes(server *Server, authMiddleware *middleware.AuthMiddleware) *gin
 	config.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
 	r.Use(cors.New(config))
 
+	// Explicitly handle OPTIONS for all routes as a fallback for CORS preflight
+	r.OPTIONS("/*path", func(c *gin.Context) {
+		c.Status(200)
+	})
+
 	// Health check
 	r.GET("/health", server.HealthHandler.GetHealth)
 
