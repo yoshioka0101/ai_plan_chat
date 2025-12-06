@@ -37,7 +37,7 @@ func SetupRoutes(server *Server, authMiddleware *middleware.AuthMiddleware) *gin
 
 	// CORS configuration
 	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"http://localhost:5173"} // Vite dev server
+	config.AllowOrigins = []string{"http://localhost:5173", "https://app.hubplanner-ai.click"} // Add production frontend URL
 	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
 	config.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
 	r.Use(cors.New(config))
