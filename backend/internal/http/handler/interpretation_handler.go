@@ -333,3 +333,13 @@ func ptrString(s string) *string {
 func ptrInt(i int) *int {
 	return &i
 }
+
+// RegisterRoutes はAI解釈関連のルートを登録します
+func (h *InterpretationHandler) RegisterRoutes(group *gin.RouterGroup) {
+	interpretations := group.Group("/interpretations")
+	{
+		interpretations.POST("", h.CreateInterpretation)
+		interpretations.GET("", h.ListInterpretations)
+		interpretations.GET("/:id", h.GetInterpretation)
+	}
+}

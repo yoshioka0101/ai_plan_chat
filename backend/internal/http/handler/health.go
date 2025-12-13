@@ -20,3 +20,8 @@ func (h *HealthHandler) GetHealth(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response)
 }
+
+// RegisterRoutes はヘルスチェック関連のルートを登録します
+func (h *HealthHandler) RegisterRoutes(group *gin.RouterGroup) {
+	group.GET("/health", h.GetHealth)
+}

@@ -213,3 +213,16 @@ func (h *TaskHandler) DeleteTask(c *gin.Context) {
 
 	c.Status(http.StatusNoContent)
 }
+
+// RegisterRoutes はタスク関連のルートを登録します
+func (h *TaskHandler) RegisterRoutes(group *gin.RouterGroup) {
+	tasks := group.Group("/tasks")
+	{
+		tasks.GET("", h.GetTaskList)
+		tasks.POST("", h.CreateTask)
+		tasks.GET("/:id", h.GetTask)
+		tasks.PUT("/:id", h.UpdateTask)
+		tasks.PATCH("/:id", h.EditTask)
+		tasks.DELETE("/:id", h.DeleteTask)
+	}
+}

@@ -19,10 +19,10 @@ type Server struct {
 // NewServer は統合ハンドラーを作成します
 func NewServer(healthHandler *handler.HealthHandler, taskHandler *handler.TaskHandler, authHandler *handler.AuthHandler, interpretationHandler *handler.InterpretationHandler, interpretationItemHandler *handler.InterpretationItemHandler) *Server {
 	return &Server{
-		HealthHandler:              healthHandler,
-		TaskHandler:                taskHandler,
-		AuthHandler:                authHandler,
-		InterpretationHandler:      interpretationHandler,
+		HealthHandler:             healthHandler,
+		TaskHandler:               taskHandler,
+		AuthHandler:               authHandler,
+		InterpretationHandler:     interpretationHandler,
 		InterpretationItemHandler: interpretationItemHandler,
 	}
 }
@@ -47,48 +47,17 @@ func SetupRoutes(server *Server, authMiddleware *middleware.AuthMiddleware) *gin
 		c.Status(200)
 	})
 
-	// Health check
-	r.GET("/health", server.HealthHandler.GetHealth)
+	// Register root level routes (health, auth)
+	server.HealthHandler.RegisterRoutes(&r.RouterGroup)
+	server.AuthHandler.RegisterRoutes(&r.RouterGroup)
 
-	// Auth endpoints
-	r.GET("/auth/google", server.AuthHandler.GoogleAuth)
-	r.GET("/auth/google/callback", server.AuthHandler.GoogleCallback)
-	r.POST("/auth/google/callback", server.AuthHandler.GoogleCallback)
-
-	// API v1 routes
+	// API v1 routes with authentication
 	v1 := r.Group("/api/v1")
+	v1.Use(authMiddleware.RequireAuth())
 	{
-		// Task endpoints
-		tasks := v1.Group("/tasks")
-		tasks.Use(authMiddleware.RequireAuth())
-		{
-			tasks.GET("", server.TaskHandler.GetTaskList)
-			tasks.POST("", server.TaskHandler.CreateTask)
-			tasks.GET("/:id", server.TaskHandler.GetTask)
-			tasks.PUT("/:id", server.TaskHandler.UpdateTask)
-			tasks.PATCH("/:id", server.TaskHandler.EditTask)
-			tasks.DELETE("/:id", server.TaskHandler.DeleteTask)
-		}
-
-		// Interpretation endpoints
-		interpretations := v1.Group("/interpretations")
-		interpretations.Use(authMiddleware.RequireAuth())
-		{
-			interpretations.POST("", server.InterpretationHandler.CreateInterpretation)
-			interpretations.GET("", server.InterpretationHandler.ListInterpretations)
-			interpretations.GET("/:id", server.InterpretationHandler.GetInterpretation)
-			interpretations.GET("/:id/items", server.InterpretationItemHandler.GetInterpretationItemsByInterpretationID)
-			interpretations.POST("/:id/approve-items", server.InterpretationItemHandler.ApproveMultipleItems)
-		}
-
-		// Interpretation Item endpoints
-		items := v1.Group("/interpretation-items")
-		items.Use(authMiddleware.RequireAuth())
-		{
-			items.GET("/:id", server.InterpretationItemHandler.GetInterpretationItem)
-			items.PATCH("/:id", server.InterpretationItemHandler.UpdateInterpretationItem)
-			items.POST("/:id/approve", server.InterpretationItemHandler.ApproveInterpretationItem)
-		}
+		server.TaskHandler.RegisterRoutes(v1)
+		server.InterpretationHandler.RegisterRoutes(v1)
+		server.InterpretationItemHandler.RegisterRoutes(v1)
 	}
 
 	return r

@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/yoshioka0101/ai_plan_chat/gen/models"
 	"github.com/yoshioka0101/ai_plan_chat/internal/entity"
 )
@@ -73,4 +74,9 @@ type InterpretationItemUseCase interface {
 
 	// 複数アイテム一括承認→リソース作成（トランザクション）
 	ApproveMultipleItems(ctx context.Context, itemIDs []string) (resourceIDs map[string]string, err error)
+}
+
+// RouteRegistrar はルート登録を行うインターフェース
+type RouteRegistrar interface {
+	RegisterRoutes(group *gin.RouterGroup)
 }

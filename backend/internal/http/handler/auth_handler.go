@@ -178,3 +178,10 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 
 	c.Redirect(http.StatusFound, redirectURL)
 }
+
+// RegisterRoutes は認証関連のルートを登録します
+func (h *AuthHandler) RegisterRoutes(group *gin.RouterGroup) {
+	group.GET("/auth/google", h.GoogleAuth)
+	group.GET("/auth/google/callback", h.GoogleCallback)
+	group.POST("/auth/google/callback", h.GoogleCallback)
+}

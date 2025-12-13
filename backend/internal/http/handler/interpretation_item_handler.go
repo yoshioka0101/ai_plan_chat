@@ -183,3 +183,21 @@ func (h *InterpretationItemHandler) ApproveMultipleItems(c *gin.Context) {
 func contextWithUserID(ctx context.Context, userID string) context.Context {
 	return context.WithValue(ctx, "user_id", userID)
 }
+
+// RegisterRoutes はAI解釈アイテム関連のルートを登録します
+func (h *InterpretationItemHandler) RegisterRoutes(group *gin.RouterGroup) {
+	// /interpretations/:id/items などのパス
+	interpretations := group.Group("/interpretations")
+	{
+		interpretations.GET("/:id/items", h.GetInterpretationItemsByInterpretationID)
+		interpretations.POST("/:id/approve-items", h.ApproveMultipleItems)
+	}
+
+	// /interpretation-items のパス
+	items := group.Group("/interpretation-items")
+	{
+		items.GET("/:id", h.GetInterpretationItem)
+		items.PATCH("/:id", h.UpdateInterpretationItem)
+		items.POST("/:id/approve", h.ApproveInterpretationItem)
+	}
+}
