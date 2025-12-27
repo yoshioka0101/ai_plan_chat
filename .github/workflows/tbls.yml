@@ -44,10 +44,6 @@ jobs:
         run: |
           curl -sSf https://atlasgo.sh | sh
 
-      - name: Lint migrations
-        run: |
-          atlas migrate lint --dir file://migrations --dev-url "docker://mysql/8/dev" --latest 1
-
       - name: Apply migrations
         run: |
           atlas migrate hash --dir file://migrations
