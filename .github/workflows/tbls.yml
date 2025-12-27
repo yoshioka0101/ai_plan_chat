@@ -1,22 +1,63 @@
-name: tbls
+name: Generate DB Documentation
 
 on:
-  push:
-    branches:
-      - main
-      - v.*
-    # paths:
-    #   - 'schemas/**'
-    #   - 'migrations/**'
+  # push:
+  #   branches:
+  #     - main
+  #     - v.*
+  #   paths:
+  #     - 'schemas/**'
+  #     - 'migrations/**'
+  #     - '.tbls.yml'
+  pull_request:
+    paths:
+      - 'schemas/**'
+      - 'migrations/**'
+      - '.tbls.yml'
+
 jobs:
   tbls:
     runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: ai_chat_task
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Run tbls
+      - name: Install Atlas CLI
         run: |
-          echo "Hello, world!"
+          curl -sSf https://atlasgo.sh | sh
+
+      - name: Apply migrations
+        run: |
+          cd migrations
+          atlas migrate apply --env dev --url "mysql://root:password@localhost:3306/ai_chat_task"
+
+      - name: Install tbls
+        uses: k1low/setup-tbls@v1
+
+      - name: Generate database documentation
+        run: tbls doc
+
+      - name: Commit and push documentation
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add documents/
+          git diff --cached --quiet || git commit -m "docs: update database documentation [skip ci]"
+          git push
