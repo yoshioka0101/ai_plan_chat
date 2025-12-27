@@ -51,8 +51,8 @@ jobs:
 
       - name: Apply migrations
         run: |
-          cd migrations
-          atlas migrate apply --env dev --url "mysql://root:password@localhost:3306/ai_chat_task"
+          atlas migrate hash --dir file://migrations
+          atlas migrate apply --dir file://migrations --url "mysql://root:password@localhost:3306/ai_chat_task"
 
       - name: Install tbls
         uses: k1low/setup-tbls@v1
