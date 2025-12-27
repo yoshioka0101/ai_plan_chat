@@ -1,0 +1,22 @@
+name: tbls
+
+on:
+  push:
+    branches:
+      - main
+      - v.*
+    # paths:
+    #   - 'schemas/**'
+    #   - 'migrations/**'
+jobs:
+  tbls:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run tbls
+        run: |
+          echo "Hello, world!"

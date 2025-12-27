@@ -1,0 +1,5 @@
+# tbls configuration
+dsn: mysql://root:password@localhost:3306/ai_chat_task
+docPath: documents/db/er
+er:
+  format: mermaid
