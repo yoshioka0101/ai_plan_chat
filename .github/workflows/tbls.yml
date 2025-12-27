@@ -10,14 +10,17 @@ on:
   #     - 'migrations/**'
   #     - '.tbls.yml'
   pull_request:
-    paths:
-      - 'schemas/**'
-      - 'migrations/**'
-      - '.tbls.yml'
+    # paths:
+    #   - 'schemas/**'
+    #   - 'migrations/**'
+    #   - '.tbls.yml'
 
 jobs:
   tbls:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
 
     services:
       mysql:
@@ -37,6 +40,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
       - name: Install Atlas CLI
@@ -59,5 +65,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add documents/
-          git diff --cached --quiet || git commit -m "docs: update database documentation [skip ci]"
-          git push
+          if ! git diff --cached --quiet; then
+            git commit -m "docs: update database documentation [skip ci]"
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          fi
