@@ -1,7 +1,6 @@
 ---
 name: 開発効率向上
 about: CI/CD、開発ツール、自動化などの開発効率を向上させる施策の提案
-title: '[DEV-EFFICIENCY] '
 labels: dev-efficiency
 assignees: ''
 ---

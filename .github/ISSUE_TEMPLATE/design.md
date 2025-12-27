@@ -1,7 +1,6 @@
 ---
 name: 設計ドキュメント
 about: 新機能や変更の設計を文書化する際に使用してください
-title: '[DESIGN] '
 labels: design
 assignees: ''
 ---
