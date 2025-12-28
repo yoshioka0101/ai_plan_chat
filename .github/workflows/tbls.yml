@@ -1,22 +1,94 @@
-name: tbls
+name: Database Schema CI/CD
 
 on:
-  push:
-    branches:
-      - main
-      - v.*
-    # paths:
-    #   - 'schemas/**'
-    #   - 'migrations/**'
+  pull_request:
+
 jobs:
-  tbls:
+  atlas:
+    name: Atlas Migration
     runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: ai_chat_task
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Run tbls
+      - name: Install Atlas CLI
         run: |
-          echo "Hello, world!"
+          curl -sSf https://atlasgo.sh | sh
+
+      - name: Apply migrations
+        run: |
+          atlas migrate hash --dir file://migrations
+          atlas migrate apply --dir file://migrations --url "mysql://root:password@localhost:3306/ai_chat_task"
+
+  generate-docs:
+    name: Generate ER Diagram
+    needs: atlas
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: ai_chat_task
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Install Atlas CLI
+        run: |
+          curl -sSf https://atlasgo.sh | sh
+
+      - name: Apply migrations
+        run: |
+          atlas migrate hash --dir file://migrations
+          atlas migrate apply --dir file://migrations --url "mysql://root:password@localhost:3306/ai_chat_task"
+
+      - name: Install tbls
+        uses: k1low/setup-tbls@v1
+
+      - name: Generate database documentation
+        run: tbls doc
+
+      - name: Commit and push documentation
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add documents/
+          if ! git diff --cached --quiet; then
+            git commit -m "docs: update database documentation [skip ci]"
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          fi

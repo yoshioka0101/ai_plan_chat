@@ -1,0 +1,859 @@
+{
+  "name": "ai_chat_task",
+  "tables": [
+    {
+      "name": "ai_interpretations",
+      "type": "BASE TABLE",
+      "comment": "AI解析履歴",
+      "columns": [
+        {
+          "name": "id",
+          "type": "char(36)",
+          "nullable": false,
+          "comment": "AI解釈ID (UUID)"
+        },
+        {
+          "name": "user_id",
+          "type": "char(36)",
+          "nullable": false,
+          "comment": "ユーザーID"
+        },
+        {
+          "name": "input_text",
+          "type": "text",
+          "nullable": false,
+          "comment": "ユーザーが入力した自然言語テキスト"
+        },
+        {
+          "name": "structured_result",
+          "type": "json",
+          "nullable": false,
+          "comment": "AI解析結果のJSON構造"
+        },
+        {
+          "name": "original_result",
+          "type": "json",
+          "nullable": true,
+          "comment": "AI提案の原本（レビュー前）"
+        },
+        {
+          "name": "ai_model",
+          "type": "varchar(100)",
+          "nullable": false,
+          "default": "gemini-flash",
+          "comment": "使用AIモデル名"
+        },
+        {
+          "name": "ai_prompt_tokens",
+          "type": "int",
+          "nullable": true,
+          "comment": "入力トークン数"
+        },
+        {
+          "name": "ai_completion_tokens",
+          "type": "int",
+          "nullable": true,
+          "comment": "出力トークン数"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED",
+          "comment": "解析実行日時"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_ai_interpretations_user_created",
+          "def": "KEY idx_ai_interpretations_user_created (user_id, created_at) USING BTREE",
+          "table": "ai_interpretations",
+          "columns": [
+            "user_id",
+            "created_at"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "def": "PRIMARY KEY (id) USING BTREE",
+          "table": "ai_interpretations",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_ai_interpretations_user",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (user_id) REFERENCES users (id)",
+          "table": "ai_interpretations",
+          "referenced_table": "users",
+          "columns": [
+            "user_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "ai_interpretations",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "def": "CREATE TABLE `ai_interpretations` (\n  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'AI解釈ID (UUID)',\n  `user_id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'ユーザーID',\n  `input_text` text COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'ユーザーが入力した自然言語テキスト',\n  `structured_result` json NOT NULL COMMENT 'AI解析結果のJSON構造',\n  `original_result` json DEFAULT NULL COMMENT 'AI提案の原本（レビュー前）',\n  `ai_model` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'gemini-flash' COMMENT '使用AIモデル名',\n  `ai_prompt_tokens` int DEFAULT NULL COMMENT '入力トークン数',\n  `ai_completion_tokens` int DEFAULT NULL COMMENT '出力トークン数',\n  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '解析実行日時',\n  PRIMARY KEY (`id`),\n  KEY `idx_ai_interpretations_user_created` (`user_id`,`created_at` DESC),\n  KEY `idx_ai_interpretations_type` ((cast(json_unquote(json_extract(`structured_result`,_utf8mb4'$.type')) as char(50) charset utf8mb4))),\n  CONSTRAINT `fk_ai_interpretations_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI解析履歴'"
+    },
+    {
+      "name": "atlas_schema_revisions",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "version",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "description",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "type",
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": "2"
+        },
+        {
+          "name": "applied",
+          "type": "bigint",
+          "nullable": false,
+          "default": "0"
+        },
+        {
+          "name": "total",
+          "type": "bigint",
+          "nullable": false,
+          "default": "0"
+        },
+        {
+          "name": "executed_at",
+          "type": "timestamp",
+          "nullable": false
+        },
+        {
+          "name": "execution_time",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "error",
+          "type": "longtext",
+          "nullable": true
+        },
+        {
+          "name": "error_stmt",
+          "type": "longtext",
+          "nullable": true
+        },
+        {
+          "name": "hash",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "partial_hashes",
+          "type": "json",
+          "nullable": true
+        },
+        {
+          "name": "operator_version",
+          "type": "varchar(255)",
+          "nullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "def": "PRIMARY KEY (version) USING BTREE",
+          "table": "atlas_schema_revisions",
+          "columns": [
+            "version"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "PRIMARY",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (version)",
+          "table": "atlas_schema_revisions",
+          "columns": [
+            "version"
+          ]
+        }
+      ],
+      "def": "CREATE TABLE `atlas_schema_revisions` (\n  `version` varchar(255) COLLATE utf8mb4_bin NOT NULL,\n  `description` varchar(255) COLLATE utf8mb4_bin NOT NULL,\n  `type` bigint unsigned NOT NULL DEFAULT '2',\n  `applied` bigint NOT NULL DEFAULT '0',\n  `total` bigint NOT NULL DEFAULT '0',\n  `executed_at` timestamp NOT NULL,\n  `execution_time` bigint NOT NULL,\n  `error` longtext COLLATE utf8mb4_bin,\n  `error_stmt` longtext COLLATE utf8mb4_bin,\n  `hash` varchar(255) COLLATE utf8mb4_bin NOT NULL,\n  `partial_hashes` json DEFAULT NULL,\n  `operator_version` varchar(255) COLLATE utf8mb4_bin NOT NULL,\n  PRIMARY KEY (`version`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin"
+    },
+    {
+      "name": "interpretation_items",
+      "type": "BASE TABLE",
+      "comment": "AI解釈アイテム（レビュー対象）",
+      "columns": [
+        {
+          "name": "id",
+          "type": "char(36)",
+          "nullable": false,
+          "comment": "アイテムID (UUID)"
+        },
+        {
+          "name": "interpretation_id",
+          "type": "char(36)",
+          "nullable": false,
+          "comment": "AI解釈ID"
+        },
+        {
+          "name": "item_index",
+          "type": "int",
+          "nullable": false,
+          "comment": "結果内のindex"
+        },
+        {
+          "name": "resource_type",
+          "type": "varchar(20)",
+          "nullable": false,
+          "comment": "リソースタイプ (task/event/wallet)"
+        },
+        {
+          "name": "resource_id",
+          "type": "char(36)",
+          "nullable": true,
+          "comment": "作成済みリソースID"
+        },
+        {
+          "name": "status",
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": "pending",
+          "comment": "ステータス (pending/created)"
+        },
+        {
+          "name": "data",
+          "type": "json",
+          "nullable": false,
+          "comment": "編集後のアイテム内容"
+        },
+        {
+          "name": "original_data",
+          "type": "json",
+          "nullable": false,
+          "comment": "AI提案の原本"
+        },
+        {
+          "name": "reviewed_at",
+          "type": "timestamp",
+          "nullable": true,
+          "comment": "レビュー日時"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED",
+          "comment": "作成日時"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP",
+          "comment": "更新日時"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_interpretation_items_interpretation",
+          "def": "KEY idx_interpretation_items_interpretation (interpretation_id, item_index) USING BTREE",
+          "table": "interpretation_items",
+          "columns": [
+            "interpretation_id",
+            "item_index"
+          ]
+        },
+        {
+          "name": "idx_interpretation_items_resource",
+          "def": "KEY idx_interpretation_items_resource (resource_type, resource_id) USING BTREE",
+          "table": "interpretation_items",
+          "columns": [
+            "resource_type",
+            "resource_id"
+          ]
+        },
+        {
+          "name": "idx_interpretation_items_status",
+          "def": "KEY idx_interpretation_items_status (interpretation_id, status) USING BTREE",
+          "table": "interpretation_items",
+          "columns": [
+            "interpretation_id",
+            "status"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "def": "PRIMARY KEY (id) USING BTREE",
+          "table": "interpretation_items",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_interpretation_items_interpretation",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (interpretation_id) REFERENCES ai_interpretations (id)",
+          "table": "interpretation_items",
+          "referenced_table": "ai_interpretations",
+          "columns": [
+            "interpretation_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "interpretation_items",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "chk_interpretation_items_resource_type",
+          "type": "CHECK",
+          "def": "CHECK ((`resource_type` in (_utf8mb4\\'task\\',_utf8mb4\\'event\\',_utf8mb4\\'wallet\\')))",
+          "table": "interpretation_items"
+        },
+        {
+          "name": "chk_interpretation_items_status",
+          "type": "CHECK",
+          "def": "CHECK ((`status` in (_utf8mb4\\'pending\\',_utf8mb4\\'created\\')))",
+          "table": "interpretation_items"
+        }
+      ],
+      "def": "CREATE TABLE `interpretation_items` (\n  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'アイテムID (UUID)',\n  `interpretation_id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'AI解釈ID',\n  `item_index` int NOT NULL COMMENT '結果内のindex',\n  `resource_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'リソースタイプ (task/event/wallet)',\n  `resource_id` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '作成済みリソースID',\n  `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending' COMMENT 'ステータス (pending/created)',\n  `data` json NOT NULL COMMENT '編集後のアイテム内容',\n  `original_data` json NOT NULL COMMENT 'AI提案の原本',\n  `reviewed_at` timestamp NULL DEFAULT NULL COMMENT 'レビュー日時',\n  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '作成日時',\n  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新日時',\n  PRIMARY KEY (`id`),\n  KEY `idx_interpretation_items_interpretation` (`interpretation_id`,`item_index`),\n  KEY `idx_interpretation_items_resource` (`resource_type`,`resource_id`),\n  KEY `idx_interpretation_items_status` (`interpretation_id`,`status`),\n  CONSTRAINT `fk_interpretation_items_interpretation` FOREIGN KEY (`interpretation_id`) REFERENCES `ai_interpretations` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `chk_interpretation_items_resource_type` CHECK ((`resource_type` in (_utf8mb4'task',_utf8mb4'event',_utf8mb4'wallet'))),\n  CONSTRAINT `chk_interpretation_items_status` CHECK ((`status` in (_utf8mb4'pending',_utf8mb4'created')))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI解釈アイテム（レビュー対象）'"
+    },
+    {
+      "name": "tasks",
+      "type": "BASE TABLE",
+      "comment": "タスク",
+      "columns": [
+        {
+          "name": "id",
+          "type": "char(36)",
+          "nullable": false,
+          "comment": "タスクID (UUID)"
+        },
+        {
+          "name": "user_id",
+          "type": "char(36)",
+          "nullable": false,
+          "comment": "ユーザーID"
+        },
+        {
+          "name": "title",
+          "type": "varchar(500)",
+          "nullable": false,
+          "comment": "タスクタイトル"
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "nullable": true,
+          "comment": "タスク詳細"
+        },
+        {
+          "name": "due_at",
+          "type": "timestamp",
+          "nullable": true,
+          "comment": "期限日時"
+        },
+        {
+          "name": "status",
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": "todo",
+          "comment": "ステータス（todo/in_progress/done）"
+        },
+        {
+          "name": "source",
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": "manual",
+          "comment": "作成元"
+        },
+        {
+          "name": "ai_interpretation_id",
+          "type": "char(36)",
+          "nullable": true,
+          "comment": "元のAI解釈ID"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED",
+          "comment": "作成日時"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP",
+          "comment": "更新日時"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "fk_tasks_ai_interpretation",
+          "def": "KEY fk_tasks_ai_interpretation (ai_interpretation_id) USING BTREE",
+          "table": "tasks",
+          "columns": [
+            "ai_interpretation_id"
+          ]
+        },
+        {
+          "name": "idx_tasks_created_at",
+          "def": "KEY idx_tasks_created_at (created_at) USING BTREE",
+          "table": "tasks",
+          "columns": [
+            "created_at"
+          ]
+        },
+        {
+          "name": "idx_tasks_due_at",
+          "def": "KEY idx_tasks_due_at (due_at) USING BTREE",
+          "table": "tasks",
+          "columns": [
+            "due_at"
+          ]
+        },
+        {
+          "name": "idx_tasks_status",
+          "def": "KEY idx_tasks_status (status) USING BTREE",
+          "table": "tasks",
+          "columns": [
+            "status"
+          ]
+        },
+        {
+          "name": "idx_tasks_user_created",
+          "def": "KEY idx_tasks_user_created (user_id, created_at) USING BTREE",
+          "table": "tasks",
+          "columns": [
+            "user_id",
+            "created_at"
+          ]
+        },
+        {
+          "name": "idx_tasks_user_due",
+          "def": "KEY idx_tasks_user_due (user_id, due_at) USING BTREE",
+          "table": "tasks",
+          "columns": [
+            "user_id",
+            "due_at"
+          ]
+        },
+        {
+          "name": "idx_tasks_user_status",
+          "def": "KEY idx_tasks_user_status (user_id, status) USING BTREE",
+          "table": "tasks",
+          "columns": [
+            "user_id",
+            "status"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "def": "PRIMARY KEY (id) USING BTREE",
+          "table": "tasks",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_tasks_ai_interpretation",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (ai_interpretation_id) REFERENCES ai_interpretations (id)",
+          "table": "tasks",
+          "referenced_table": "ai_interpretations",
+          "columns": [
+            "ai_interpretation_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_tasks_user",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (user_id) REFERENCES users (id)",
+          "table": "tasks",
+          "referenced_table": "users",
+          "columns": [
+            "user_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "tasks",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "chk_tasks_source",
+          "type": "CHECK",
+          "def": "CHECK ((`source` in (_utf8mb4\\'ai\\',_utf8mb4\\'manual\\')))",
+          "table": "tasks"
+        },
+        {
+          "name": "chk_tasks_status",
+          "type": "CHECK",
+          "def": "CHECK ((`status` in (_utf8mb4\\'todo\\',_utf8mb4\\'in_progress\\',_utf8mb4\\'done\\')))",
+          "table": "tasks"
+        }
+      ],
+      "def": "CREATE TABLE `tasks` (\n  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'タスクID (UUID)',\n  `user_id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'ユーザーID',\n  `title` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'タスクタイトル',\n  `description` text COLLATE utf8mb4_unicode_ci COMMENT 'タスク詳細',\n  `due_at` timestamp NULL DEFAULT NULL COMMENT '期限日時',\n  `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'todo' COMMENT 'ステータス（todo/in_progress/done）',\n  `source` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'manual' COMMENT '作成元',\n  `ai_interpretation_id` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '元のAI解釈ID',\n  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '作成日時',\n  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新日時',\n  PRIMARY KEY (`id`),\n  KEY `idx_tasks_created_at` (`created_at`),\n  KEY `idx_tasks_due_at` (`due_at`),\n  KEY `idx_tasks_status` (`status`),\n  KEY `idx_tasks_user_due` (`user_id`,`due_at`),\n  KEY `idx_tasks_user_status` (`user_id`,`status`),\n  KEY `idx_tasks_user_created` (`user_id`,`created_at` DESC),\n  KEY `fk_tasks_ai_interpretation` (`ai_interpretation_id`),\n  CONSTRAINT `fk_tasks_ai_interpretation` FOREIGN KEY (`ai_interpretation_id`) REFERENCES `ai_interpretations` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `fk_tasks_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `chk_tasks_source` CHECK ((`source` in (_utf8mb4'ai',_utf8mb4'manual'))),\n  CONSTRAINT `chk_tasks_status` CHECK ((`status` in (_utf8mb4'todo',_utf8mb4'in_progress',_utf8mb4'done')))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='タスク'"
+    },
+    {
+      "name": "user_auths",
+      "type": "BASE TABLE",
+      "comment": "ユーザー認証情報",
+      "columns": [
+        {
+          "name": "id",
+          "type": "char(36)",
+          "nullable": false,
+          "comment": "認証ID (UUID)"
+        },
+        {
+          "name": "user_id",
+          "type": "char(36)",
+          "nullable": false,
+          "comment": "ユーザーID"
+        },
+        {
+          "name": "identity_type",
+          "type": "varchar(50)",
+          "nullable": false,
+          "comment": "認証タイプ（google, email, github等）"
+        },
+        {
+          "name": "identifier",
+          "type": "varchar(255)",
+          "nullable": false,
+          "comment": "識別子（メールアドレス、ユーザー名等）"
+        },
+        {
+          "name": "credential",
+          "type": "text",
+          "nullable": true,
+          "comment": "認証情報（トークン、認証コード等）"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED",
+          "comment": "作成日時"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP",
+          "comment": "更新日時"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_user_auths_identifier",
+          "def": "KEY idx_user_auths_identifier (identity_type, identifier) USING BTREE",
+          "table": "user_auths",
+          "columns": [
+            "identity_type",
+            "identifier"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "def": "PRIMARY KEY (id) USING BTREE",
+          "table": "user_auths",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uk_user_auths_identity",
+          "def": "UNIQUE KEY uk_user_auths_identity (user_id, identity_type, identifier) USING BTREE",
+          "table": "user_auths",
+          "columns": [
+            "user_id",
+            "identity_type",
+            "identifier"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_user_auths_user",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (user_id) REFERENCES users (id)",
+          "table": "user_auths",
+          "referenced_table": "users",
+          "columns": [
+            "user_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "user_auths",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uk_user_auths_identity",
+          "type": "UNIQUE",
+          "def": "UNIQUE KEY uk_user_auths_identity (user_id, identity_type, identifier)",
+          "table": "user_auths",
+          "columns": [
+            "user_id",
+            "identity_type",
+            "identifier"
+          ]
+        }
+      ],
+      "def": "CREATE TABLE `user_auths` (\n  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '認証ID (UUID)',\n  `user_id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'ユーザーID',\n  `identity_type` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '認証タイプ（google, email, github等）',\n  `identifier` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '識別子（メールアドレス、ユーザー名等）',\n  `credential` text COLLATE utf8mb4_unicode_ci COMMENT '認証情報（トークン、認証コード等）',\n  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '作成日時',\n  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新日時',\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `uk_user_auths_identity` (`user_id`,`identity_type`,`identifier`),\n  KEY `idx_user_auths_identifier` (`identity_type`,`identifier`),\n  CONSTRAINT `fk_user_auths_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='ユーザー認証情報'"
+    },
+    {
+      "name": "users",
+      "type": "BASE TABLE",
+      "comment": "ユーザー",
+      "columns": [
+        {
+          "name": "id",
+          "type": "char(36)",
+          "nullable": false,
+          "comment": "ユーザーID (UUID)"
+        },
+        {
+          "name": "google_id",
+          "type": "varchar(255)",
+          "nullable": false,
+          "comment": "GoogleユーザーID"
+        },
+        {
+          "name": "email",
+          "type": "varchar(255)",
+          "nullable": false,
+          "comment": "メールアドレス"
+        },
+        {
+          "name": "nickname",
+          "type": "varchar(100)",
+          "nullable": false,
+          "comment": "ニックネーム/表示名"
+        },
+        {
+          "name": "avatar",
+          "type": "varchar(500)",
+          "nullable": true,
+          "comment": "アバター画像URL"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED",
+          "comment": "作成日時"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP",
+          "comment": "更新日時"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_users_created_at",
+          "def": "KEY idx_users_created_at (created_at) USING BTREE",
+          "table": "users",
+          "columns": [
+            "created_at"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "def": "PRIMARY KEY (id) USING BTREE",
+          "table": "users",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "idx_users_email",
+          "def": "UNIQUE KEY idx_users_email (email) USING BTREE",
+          "table": "users",
+          "columns": [
+            "email"
+          ]
+        },
+        {
+          "name": "idx_users_google_id",
+          "def": "UNIQUE KEY idx_users_google_id (google_id) USING BTREE",
+          "table": "users",
+          "columns": [
+            "google_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "idx_users_email",
+          "type": "UNIQUE",
+          "def": "UNIQUE KEY idx_users_email (email)",
+          "table": "users",
+          "columns": [
+            "email"
+          ]
+        },
+        {
+          "name": "idx_users_google_id",
+          "type": "UNIQUE",
+          "def": "UNIQUE KEY idx_users_google_id (google_id)",
+          "table": "users",
+          "columns": [
+            "google_id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "users",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "def": "CREATE TABLE `users` (\n  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'ユーザーID (UUID)',\n  `google_id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'GoogleユーザーID',\n  `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'メールアドレス',\n  `nickname` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'ニックネーム/表示名',\n  `avatar` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'アバター画像URL',\n  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '作成日時',\n  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新日時',\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `idx_users_google_id` (`google_id`),\n  UNIQUE KEY `idx_users_email` (`email`),\n  KEY `idx_users_created_at` (`created_at`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='ユーザー'"
+    }
+  ],
+  "relations": [
+    {
+      "table": "ai_interpretations",
+      "columns": [
+        "user_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "users",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (user_id) REFERENCES users (id)"
+    },
+    {
+      "table": "interpretation_items",
+      "columns": [
+        "interpretation_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "ai_interpretations",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (interpretation_id) REFERENCES ai_interpretations (id)"
+    },
+    {
+      "table": "tasks",
+      "columns": [
+        "ai_interpretation_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "ai_interpretations",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "zero_or_one",
+      "def": "FOREIGN KEY (ai_interpretation_id) REFERENCES ai_interpretations (id)"
+    },
+    {
+      "table": "tasks",
+      "columns": [
+        "user_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "users",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (user_id) REFERENCES users (id)"
+    },
+    {
+      "table": "user_auths",
+      "columns": [
+        "user_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "users",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (user_id) REFERENCES users (id)"
+    }
+  ],
+  "driver": {
+    "name": "mysql",
+    "database_version": "8.4.7",
+    "meta": {
+      "dict": {
+        "Functions": "Stored procedures and functions"
+      }
+    }
+  }
+}
