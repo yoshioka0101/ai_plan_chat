@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -21,6 +22,9 @@ type Config struct {
 
 	// AI設定
 	AI AIConfig
+
+	// Telemetry設定
+	Telemetry TelemetryConfig
 }
 
 // DatabaseConfig データベース接続設定
@@ -46,6 +50,16 @@ type AuthConfig struct {
 type AIConfig struct {
 	GeminiAPIKey string `json:"-"`
 	GeminiModel  string `json:"gemini_model"`
+}
+
+// TelemetryConfig OpenTelemetry設定
+type TelemetryConfig struct {
+	Enabled        bool
+	ServiceName    string
+	ServiceVersion string
+	Environment    string
+	OTLPEndpoint   string
+	SampleRatio    float64
 }
 
 // Load 環境変数から設定を読み込む
@@ -154,6 +168,47 @@ func Load() *Config {
 		log.Printf("GEMINI_MODEL not set, using default: %s", geminiModel)
 	}
 
+	// OpenTelemetry settings
+	otelEnabled := false
+	if rawEnabled := os.Getenv("OTEL_ENABLED"); rawEnabled != "" {
+		parsedEnabled, err := strconv.ParseBool(rawEnabled)
+		if err != nil {
+			log.Printf("Invalid OTEL_ENABLED value %q, defaulting to false", rawEnabled)
+		} else {
+			otelEnabled = parsedEnabled
+		}
+	}
+
+	otelServiceName := os.Getenv("OTEL_SERVICE_NAME")
+	if otelServiceName == "" {
+		otelServiceName = "ai-plan-chat-api"
+	}
+
+	otelServiceVersion := os.Getenv("OTEL_SERVICE_VERSION")
+	if otelServiceVersion == "" {
+		otelServiceVersion = os.Getenv("APP_VERSION")
+	}
+	if otelServiceVersion == "" {
+		otelServiceVersion = "unknown"
+	}
+
+	otelEnvironment := os.Getenv("OTEL_ENVIRONMENT")
+
+	otelEndpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	if otelEndpoint == "" {
+		otelEndpoint = "http://localhost:4318"
+	}
+
+	sampleRatio := 1.0
+	if rawSampleRatio := os.Getenv("OTEL_SAMPLE_RATIO"); rawSampleRatio != "" {
+		parsedRatio, err := strconv.ParseFloat(rawSampleRatio, 64)
+		if err != nil {
+			log.Printf("Invalid OTEL_SAMPLE_RATIO value %q, defaulting to 1.0", rawSampleRatio)
+		} else {
+			sampleRatio = parsedRatio
+		}
+	}
+
 	config := &Config{
 		Port: port,
 
@@ -177,6 +232,15 @@ func Load() *Config {
 		AI: AIConfig{
 			GeminiAPIKey: geminiAPIKey,
 			GeminiModel:  geminiModel,
+		},
+
+		Telemetry: TelemetryConfig{
+			Enabled:        otelEnabled,
+			ServiceName:    otelServiceName,
+			ServiceVersion: otelServiceVersion,
+			Environment:    otelEnvironment,
+			OTLPEndpoint:   otelEndpoint,
+			SampleRatio:    sampleRatio,
 		},
 	}
 
