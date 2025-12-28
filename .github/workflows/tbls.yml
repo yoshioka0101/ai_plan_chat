@@ -1,19 +1,7 @@
 name: Database Schema CI/CD
 
 on:
-  # push:
-  #   branches:
-  #     - main
-  #     - v.*
-  #   paths:
-  #     - 'schemas/**'
-  #     - 'migrations/**'
-  #     - '.tbls.yml'
   pull_request:
-    # paths:
-    #   - 'schemas/**'
-    #   - 'migrations/**'
-    #   - '.tbls.yml'
 
 jobs:
   atlas:
