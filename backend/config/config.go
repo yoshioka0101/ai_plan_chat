@@ -106,16 +106,7 @@ func Load() *Config {
 	// JWTシークレット（必須設定）
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
-		fmt.Println("❌ JWT_SECRET environment variable is not set!")
-		fmt.Println()
-		fmt.Println("=== JWT_SECRET Generation Help ===")
-		fmt.Println("To generate a secure JWT_SECRET, run:")
-		fmt.Println("   openssl rand -base64 32")
-		fmt.Println()
-		fmt.Println("Then set the environment variable:")
-		fmt.Println("   export JWT_SECRET=\"your-generated-secret-here\"")
-		fmt.Println("==================================")
-		log.Fatal("JWT_SECRET environment variable is required. Please set a strong secret key.")
+		log.Fatal("JWT_SECRET environment variable is required. Set a secret with at least 32 characters in backend/.env or your shell environment.")
 	}
 
 	// JWT_SECRETの強度チェック（最低32文字）
