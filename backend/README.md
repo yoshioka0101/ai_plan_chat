@@ -57,6 +57,17 @@ backend/
 make install
 ```
 
+## OpenTelemetry (トレーシング)
+
+OpenTelemetryは環境変数で有効化します。デフォルトでは無効です。
+
+```bash
+export OTEL_ENABLED=true
+export OTEL_SERVICE_NAME=ai-plan-chat-api
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+export OTEL_SAMPLE_RATIO=1.0
+```
+
 ## 開発
 
 ```bash
@@ -96,4 +107,3 @@ ECRにpushする場合は、リポジトリURIでタグ付けしてから `docke
 ## 利用可能なコマンド
 
 必要なコマンドは  make コマンドで全て確認することができます
-

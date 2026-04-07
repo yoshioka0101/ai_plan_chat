@@ -12,11 +12,27 @@ import (
 
 	"github.com/yoshioka0101/ai_plan_chat/config"
 	"github.com/yoshioka0101/ai_plan_chat/internal/infrastructure"
+	"github.com/yoshioka0101/ai_plan_chat/internal/telemetry"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 func main() {
 	// 設定を読み込み
 	cfg := config.Load()
+
+	// OpenTelemetry初期化
+	otelShutdown := func(context.Context) error { return nil }
+	otelShutdown, err := telemetry.Init(context.Background(), cfg)
+	if err != nil {
+		log.Printf("Failed to initialize OpenTelemetry: %v", err)
+	}
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := otelShutdown(ctx); err != nil {
+			log.Printf("Failed to shutdown OpenTelemetry: %v", err)
+		}
+	}()
 
 	// データベース接続を初期化
 	db, err := infrastructure.NewDB(cfg)
@@ -32,9 +48,10 @@ func main() {
 
 	// HTTPサーバーを作成
 	addr := fmt.Sprintf(":%s", cfg.Port)
+	handler := otelhttp.NewHandler(r, "http.server")
 	srv := &http.Server{
 		Addr:    addr,
-		Handler: r,
+		Handler: handler,
 	}
 
 	// Graceful shutdownのためのチャンネル
